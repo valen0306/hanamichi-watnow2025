@@ -5,4 +5,4 @@ export default function PostPage() {
       <p>このページは開発中です。</p>
     </div>
   );
-}
+} 
