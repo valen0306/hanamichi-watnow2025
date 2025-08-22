@@ -1,3 +1,23 @@
+/**
+ * captionとuser_idを取得してpostテーブルに保存する関数
+ * @param caption 投稿の本文
+ * @param userId 投稿者のID
+ * @returns 作成されたPostデータ or null
+ */
+export async function createPostWithCaptionAndUserId(caption: string, userId: string): Promise<Post | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('posts')
+    .insert([{ caption, user_id: userId }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating post:', error);
+    return null;
+  }
+  return data;
+}
 import { createClient } from './supabase';
 import { Post, CreatePostData, UpdatePostData } from '@/types/database';
 
