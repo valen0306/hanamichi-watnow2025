@@ -43,7 +43,7 @@ export default function LoginPage() {
           const userData = {
             id: data.user.id,
             email: data.user.email!,
-            username: null, // デフォルトユーザー名
+            username: undefined, // デフォルトユーザー名
             full_name: '',
             avatar_url: '',
           };
