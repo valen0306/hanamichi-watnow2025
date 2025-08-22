@@ -1,11 +1,14 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { User } from '@supabase/supabase-js';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase';
+import { User } from '@/types/database';
+import { getUser } from '@/lib/user';
 
 interface AuthContextType {
-  user: User | null;
+  user: SupabaseUser | null;
+  profile: User | null;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -13,7 +16,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [profile, setProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
@@ -24,6 +28,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: { session },
       } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
+
+      // ユーザーが存在する場合、プロフィールを取得
+      if (session?.user) {
+        const userProfile = await getUser(session.user.id);
+        setProfile(userProfile);
+      }
+
       setLoading(false);
     };
 
@@ -34,6 +45,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       setUser(session?.user ?? null);
+
+      // ユーザーが存在する場合、プロフィールを取得
+      if (session?.user) {
+        const userProfile = await getUser(session.user.id);
+        setProfile(userProfile);
+      } else {
+        setProfile(null);
+      }
+
       setLoading(false);
     });
 
@@ -46,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = {
     user,
+    profile,
     loading,
     signOut,
   };

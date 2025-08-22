@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { createUser } from '@/lib/user';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -33,8 +34,18 @@ export default function LoginPage() {
         if (data.user && !data.session) {
           // メール確認が必要な場合
           alert('確認メールを送信しました。メールを確認してください。');
-        } else if (data.session) {
+        } else if (data.session && data.user) {
           // メール確認が不要で直接ログインできた場合
+          // ユーザー情報を作成
+          const userData = {
+            id: data.user.id,
+            email: data.user.email!,
+            username: data.user.email?.split('@')[0], // デフォルトユーザー名
+            full_name: '',
+            avatar_url: '',
+          };
+
+          await createUser(userData);
           router.push('/');
         }
       } else {

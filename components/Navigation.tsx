@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
 export default function Navigation() {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
 
   const handleSignOut = async () => {
     await signOut();
@@ -23,7 +23,9 @@ export default function Navigation() {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                <span className="text-gray-700">ようこそ、{user.email}</span>
+                <span className="text-gray-700">
+                  ようこそ、{profile?.username || user.email}
+                </span>
                 <button
                   onClick={handleSignOut}
                   className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
