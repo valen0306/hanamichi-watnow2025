@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { createUser } from '@/lib/user';
+import { createPost } from '@/lib/post';
+
+
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
