@@ -1,4 +1,23 @@
 /**
+ * post_imagesテーブルに写真のURL・緯度・経度・post_idを保存する関数
+ * @param imageUrl 画像の公開URL
+ * @param lat 緯度
+ * @param lng 経度
+ * @param postId 投稿ID
+ * @returns 保存結果（true:成功, false:失敗）
+ */
+export async function savePostImageInfo(imageUrl: string, lat: number, lng: number, postId: string): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from('post_images')
+    .insert([{ image_url: imageUrl, latitude: lat, longitude: lng, post_id: postId }]);
+  if (error) {
+    console.error('Error saving post image info:', error);
+    return false;
+  }
+  return true;
+}
+/**
  * captionとuser_idを取得してpostテーブルに保存する関数
  * @param caption 投稿の本文
  * @param userId 投稿者のID
