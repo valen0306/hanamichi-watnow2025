@@ -1,3 +1,6 @@
+"use client";
+
+
 import React, { useRef, useEffect, useState } from "react";
 
 const CameraPost: React.FC = () => {
@@ -6,6 +9,8 @@ const CameraPost: React.FC = () => {
   const [photo, setPhoto] = useState<string | null>(null);
   const [comment, setComment] = useState<string>("");
   const [isPosted, setIsPosted] = useState<boolean>(false);
+  const [location, setLocation] = useState<{lat: number; lng: number} | null>(null);
+  const [locationError, setLocationError] = useState<string>("");
 
   useEffect(() => {
     const startCamera = async () => {
@@ -34,6 +39,21 @@ const CameraPost: React.FC = () => {
         ctx.drawImage(videoRef.current, 0, 0, width, height);
         const imageData = canvasRef.current.toDataURL("image/png");
         setPhoto(imageData);
+        // 位置情報取得
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+              setLocationError("");
+            },
+            (err) => {
+              setLocationError("位置情報の取得に失敗しました");
+            },
+            { enableHighAccuracy: true }
+          );
+        } else {
+          setLocationError("このデバイスは位置情報取得に対応していません");
+        }
       }
     }
   };
@@ -54,9 +74,29 @@ const CameraPost: React.FC = () => {
       )}
       <canvas ref={canvasRef} style={{ display: "none" }} />
       {photo && !isPosted && (
-        <div>
+        <div style={{ position: "relative" }}>
           <h3>撮影した写真</h3>
-          <img src={photo} alt="撮影画像" style={{ width: "100%" }} />
+          <div style={{ position: "relative", width: "100%" }}>
+            <img src={photo} alt="撮影画像" style={{ width: "100%" }} />
+            {/* 位置情報を写真下部中央に表示 */}
+            {(location || locationError) && (
+              <div style={{
+                position: "absolute",
+                bottom: 10,
+                left: "50%",
+                transform: "translateX(-50%)",
+                background: "rgba(0,0,0,0.6)",
+                color: "#fff",
+                padding: "4px 12px",
+                borderRadius: "8px",
+                fontSize: "0.95em"
+              }}>
+                {location
+                  ? `位置情報: 緯度 ${location.lat.toFixed(6)}, 経度 ${location.lng.toFixed(6)}`
+                  : locationError}
+              </div>
+            )}
+          </div>
           <div>
             <textarea
               value={comment}
@@ -65,7 +105,10 @@ const CameraPost: React.FC = () => {
               style={{ width: "100%", marginTop: 8 }}
             />
           </div>
-          <button onClick={handlePost} disabled={!comment}>投稿</button>
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button onClick={handlePost} disabled={!comment}>投稿</button>
+            <button onClick={() => window.location.reload()}>再撮影</button>
+          </div>
         </div>
       )}
       {isPosted && (
