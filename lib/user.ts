@@ -13,7 +13,12 @@ export async function createUser(
     .single();
 
   if (error) {
-    console.error('Error creating user:', error);
+    console.error('Error creating user:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    });
     return null;
   }
 

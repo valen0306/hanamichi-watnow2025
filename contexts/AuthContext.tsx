@@ -31,8 +31,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // ユーザーが存在する場合、プロフィールを取得
       if (session?.user) {
-        const userProfile = await getUser(session.user.id);
-        setProfile(userProfile);
+        try {
+          const userProfile = await getUser(session.user.id);
+          setProfile(userProfile);
+        } catch (error) {
+          console.warn('Failed to fetch user profile:', error);
+          // プロフィールが取得できない場合でも認証は継続
+        }
       }
 
       setLoading(false);
@@ -48,8 +53,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // ユーザーが存在する場合、プロフィールを取得
       if (session?.user) {
-        const userProfile = await getUser(session.user.id);
-        setProfile(userProfile);
+        try {
+          const userProfile = await getUser(session.user.id);
+          setProfile(userProfile);
+        } catch (error) {
+          console.warn('Failed to fetch user profile:', error);
+          // プロフィールが取得できない場合でも認証は継続
+        }
       } else {
         setProfile(null);
       }
@@ -58,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [supabase]);
 
   const signOut = async () => {
     await supabase.auth.signOut();

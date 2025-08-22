@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+  const [notification, setNotification] = useState<string | null>(null);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,14 +34,16 @@ export default function LoginPage() {
         // メール確認が不要な場合、直接ログイン状態にする
         if (data.user && !data.session) {
           // メール確認が必要な場合
-          alert('確認メールを送信しました。メールを確認してください。');
+          setNotification(
+            '確認メールを送信しました。メールを確認してください。'
+          );
         } else if (data.session && data.user) {
           // メール確認が不要で直接ログインできた場合
           // ユーザー情報を作成
           const userData = {
             id: data.user.id,
             email: data.user.email!,
-            username: data.user.email?.split('@')[0], // デフォルトユーザー名
+            username: null, // デフォルトユーザー名
             full_name: '',
             avatar_url: '',
           };
