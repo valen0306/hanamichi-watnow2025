@@ -8,6 +8,7 @@ import { createUser } from '@/lib/user';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -21,6 +22,9 @@ export default function LoginPage() {
     setError(null);
 
     try {
+      if (isSignUp && username.trim().length === 0) {
+        throw new Error('ユーザー名を入力してください');
+      }
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -43,7 +47,7 @@ export default function LoginPage() {
           const userData = {
             id: data.user.id,
             email: data.user.email!,
-            username: undefined, // デフォルトユーザー名
+            username: username.trim() || data.user.email?.split('@')[0],
             full_name: '',
             avatar_url: '',
           };
@@ -92,6 +96,24 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
+            {isSignUp && (
+              <div>
+                <label htmlFor="username" className="sr-only">
+                  ユーザー名
+                </label>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
+                  required
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  placeholder="ユーザー名"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+              </div>
+            )}
             <div>
               <label htmlFor="password" className="sr-only">
                 パスワード
