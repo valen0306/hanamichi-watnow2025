@@ -8,7 +8,7 @@ const Taskbar: React.FC = () => {
       <ul>
         <li>
           <Link href="/">
-            <span>ホーム</span>
+            <span>home-2-svgrepo-com.svg</span>
           </Link>
         </li>
         <li>
