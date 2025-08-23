@@ -12,6 +12,7 @@ import AddCommentBox from "@/components/features/camera/createcaptio";
 import ShareButton from "@/components/features/camera/postbutton";
 import ReClipButton from "@/components/features/camera/recripbotton";
 import ClipButton from "@/components/features/camera/cripbottun";
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
 
 const CameraPost: React.FC = () => {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ const CameraPost: React.FC = () => {
   const [photo, setPhoto] = useState<string | null>(null);
   const [comment, setComment] = useState<string>("");
   const [isPosted, setIsPosted] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [location, setLocation] = useState<{lat: number; lng: number} | null>(null);
   const [locationError, setLocationError] = useState<string>("");
 
@@ -80,12 +82,17 @@ const CameraPost: React.FC = () => {
 
   const handlePost = () => {
     console.log("handlePost called");
+    setIsLoading(true); // ローディング開始
+    
     // 投稿処理（API連携など）
     const upload = async () => {
       console.log("Uploading photo...");
       try {
          console.log("Photo data:", photo);
-        if (!photo) return;
+        if (!photo) {
+          setIsLoading(false);
+          return;
+        }
         const blob = dataURLtoBlob(photo);
         const fileName = `post_${Date.now()}.png`;
         console.log("Uploading to Supabase with filename:", fileName);
@@ -103,24 +110,27 @@ const CameraPost: React.FC = () => {
             const success = await savePostImageInfo(url, location.lat, location.lng, post.id);
             if (success) {
               console.log("投稿と画像情報の保存に成功しました");
-              // 投稿完了後、タイムラインに遷移
-              router.push("/timeline");
+              // 投稿完了後、ローディングは自動的に終了してタイムラインに遷移
             } else {
               setUploadError("画像情報の保存に失敗しました");
+              setIsLoading(false);
             }
           } else {
             setUploadError("投稿データの保存に失敗しました");
+            setIsLoading(false);
           }
           console.log("画像アップロード成功:", url);
           setUploadError("");
         } else {
           setUploadError("アップロード失敗: Supabaseストレージへの保存に失敗しました");
           console.error("画像アップロード失敗: Supabaseストレージへの保存に失敗しました");
+          setIsLoading(false);
         }
         setIsPosted(true);
       } catch (err) {
         setUploadError("アップロード失敗: " + (err instanceof Error ? err.message : String(err)));
         console.error("画像アップロード失敗", err);
+        setIsLoading(false);
       }
     };
     upload();
@@ -153,9 +163,20 @@ const CameraPost: React.FC = () => {
   }, [isPosted]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <PostHeader />
+    <>
+      {/* ローディング画面 */}
+      <LoadingScreen 
+        isVisible={isLoading} 
+        onComplete={() => {
+          setIsLoading(false);
+          router.push("/timeline");
+        }}
+        minDuration={2000} // 2秒間は最低表示
+      />
+      
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <PostHeader />
       
       {!photo && (
         <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
@@ -208,7 +229,7 @@ const CameraPost: React.FC = () => {
             <div className="flex flex-col gap-4 items-center">
               <ShareButton 
                 onClick={handlePost} 
-                disabled={!comment.trim()} 
+                disabled={isLoading} 
               />
               <ReClipButton onClick={() => window.location.reload()} />
             </div>
@@ -232,7 +253,8 @@ const CameraPost: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
