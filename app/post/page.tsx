@@ -1,9 +1,15 @@
 "use client";
 
+import { uploadImageToPostImages, dataURLtoBlob, getPostImagePublicUrl } from "@/lib/strage";
+import { createPostWithCaptionAndUserId, savePostImageInfo } from "@/lib/post";
+import { useAuth } from "@/contexts/AuthContext";
+
 
 import React, { useRef, useEffect, useState } from "react";
 
 const CameraPost: React.FC = () => {
+  const { user } = useAuth();
+  const [uploadError, setUploadError] = useState<string>("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [photo, setPhoto] = useState<string | null>(null);
@@ -39,6 +45,12 @@ const CameraPost: React.FC = () => {
         ctx.drawImage(videoRef.current, 0, 0, width, height);
         const imageData = canvasRef.current.toDataURL("image/png");
         setPhoto(imageData);
+        // カメラ機能（ストリーム）を停止
+        const stream = videoRef.current.srcObject as MediaStream | null;
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          videoRef.current.srcObject = null;
+        }
         // 位置情報取得
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
@@ -60,10 +72,77 @@ const CameraPost: React.FC = () => {
   };
 
   const handlePost = () => {
+    console.log("handlePost called");
     // 投稿処理（API連携など）
-    setIsPosted(true);
-    alert("投稿が完了しました！");
+    const upload = async () => {
+      console.log("Uploading photo...");
+      try {
+         console.log("Photo data:", photo);
+        if (!photo) return;
+        const blob = dataURLtoBlob(photo);
+        const fileName = `post_${Date.now()}.png`;
+        console.log("Uploading to Supabase with filename:", fileName);
+        const url = await uploadImageToPostImages(blob, fileName);
+          console.log("Upload result URL:", url);
+        if (url) {
+          // 投稿データ保存
+          if (!user?.id) {
+            setUploadError("ユーザーIDが取得できませんでした。ログインしてください。");
+            return;
+          }
+          const post = await createPostWithCaptionAndUserId(comment, user.id);
+          if (post && location) {
+            // 2. 画像情報保存
+            const success = await savePostImageInfo(url, location.lat, location.lng, post.id);
+            if (success) {
+              alert("投稿と画像情報の保存に成功しました");
+            } else {
+              setUploadError("画像情報の保存に失敗しました");
+            }
+          } else {
+            setUploadError("投稿データの保存に失敗しました");
+          }
+          alert("画像アップロード成功: " + url);
+          console.log("画像アップロード成功:", url);
+          setUploadError("");
+        } else {
+          setUploadError("アップロード失敗: Supabaseストレージへの保存に失敗しました");
+          console.error("画像アップロード失敗: Supabaseストレージへの保存に失敗しました");
+        }
+        setIsPosted(true);
+      } catch (err) {
+        setUploadError("アップロード失敗: " + (err instanceof Error ? err.message : String(err)));
+        console.error("画像アップロード失敗", err);
+      }
+    };
+    upload();
   };
+
+  useEffect(() => {
+    if (isPosted) {
+      // 投稿完了後、初期状態に戻して再度カメラ起動
+      setPhoto(null);
+      setComment("");
+      setIsPosted(false);
+      setLocation(null);
+      setLocationError("");
+      setUploadError("");
+      // カメラ再起動
+      const startCamera = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" },
+          });
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (err) {
+          alert("カメラの起動に失敗しました");
+        }
+      };
+      startCamera();
+    }
+  }, [isPosted]);
 
   return (
     <div>
@@ -76,7 +155,7 @@ const CameraPost: React.FC = () => {
       <canvas ref={canvasRef} style={{ display: "none" }} />
       {photo && !isPosted && (
         <div style={{ position: "relative" }}>
-          <h3>撮影した写真</h3>
+          <h3 className="text-red-500">撮影した写真</h3>
           <div style={{ position: "relative", width: "100%" }}>
             <img src={photo} alt="撮影画像" style={{ width: "100%" }} />
             {/* 位置情報を写真下部中央に表示 */}
@@ -100,6 +179,7 @@ const CameraPost: React.FC = () => {
           </div>
           <div>
             <textarea
+              className=""
               value={comment}
               onChange={e => setComment(e.target.value)}
               placeholder="コメントを入力してください"
@@ -110,6 +190,9 @@ const CameraPost: React.FC = () => {
             <button onClick={handlePost} disabled={!comment}>投稿</button>
             <button onClick={() => window.location.reload()}>再撮影</button>
           </div>
+          {uploadError && (
+            <div style={{ color: "red", marginTop: 12, textAlign: "center" }}>{uploadError}</div>
+          )}
         </div>
       )}
       {isPosted && (
