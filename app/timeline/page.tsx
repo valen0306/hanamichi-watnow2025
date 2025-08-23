@@ -1,24 +1,19 @@
-import { Search } from "lucide-react"
+'use client'
+
 import { Timeline } from "@/components/features/timeline/Timeline"
-import { SearchHeader } from "@/components/features/timeline/SearchHeader"
+import { SearchBar } from "@/components/features/timeline/SearchBar"
 
 export default function TimelinePage() {
+  const handleSearch = (query: string) => {
+    console.log('Search query:', query)
+    // ここで検索処理を実装
+  }
+
   return (
     <div className="min-h-screen bg-white">
-
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="px-4 py-3">
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="検索"
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-full text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:bg-white transition-colors"
-            />
-          </div>
-        </div>
+      {/* Sticky Header with Search */}
+      <header className="sticky top-0 z-50 bg-white">
+        <SearchBar onSearch={handleSearch} />
       </header>
 
       {/* Main Content - Timeline */}
