@@ -1,5 +1,6 @@
-import { uploadImageToPostImages, dataURLtoBlob } from "@/lib/strage";
 "use client";
+
+import { uploadImageToPostImages, dataURLtoBlob } from "@/lib/strage";
 
 
 import React, { useRef, useEffect, useState } from "react";
