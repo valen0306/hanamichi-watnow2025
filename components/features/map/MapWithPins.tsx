@@ -124,20 +124,75 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
         // 地図要素の移動を制限
         const mapCanvas = mapRef.current?.querySelector('canvas');
         if (mapCanvas) {
-          mapCanvas.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('地図の移動が試行されましたが、無効化されています');
+          // マウスイベントを完全に無効化
+          const mouseEvents = ['mousedown', 'mousemove', 'mouseup', 'click', 'dblclick'];
+          mouseEvents.forEach(eventType => {
+            mapCanvas.addEventListener(eventType, (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              e.stopImmediatePropagation();
+              return false;
+            }, { capture: true, passive: false });
           });
           
-          mapCanvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('タッチでの地図移動が試行されましたが、無効化されています');
+          // タッチイベントを完全に無効化
+          const touchEvents = ['touchstart', 'touchmove', 'touchend', 'touchcancel'];
+          touchEvents.forEach(eventType => {
+            mapCanvas.addEventListener(eventType, (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              e.stopImmediatePropagation();
+              return false;
+            }, { capture: true, passive: false });
           });
           
-          console.log('地図の移動を無効化しました（JavaScriptレベル）');
+          // キーボードイベントも無効化
+          const keyEvents = ['keydown', 'keyup', 'keypress'];
+          keyEvents.forEach(eventType => {
+            mapCanvas.addEventListener(eventType, (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              e.stopImmediatePropagation();
+              return false;
+            }, { capture: true, passive: false });
+          });
+          
+          console.log('地図の移動を完全に無効化しました（JavaScriptレベル）');
         }
+        
+        // 地図コンテナ全体の移動も制限
+        const mapContainer = mapRef.current?.querySelector('.gm-style');
+        if (mapContainer) {
+          const containerEvents = ['mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend'];
+          containerEvents.forEach(eventType => {
+            mapContainer.addEventListener(eventType, (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              e.stopImmediatePropagation();
+              return false;
+            }, { capture: true, passive: false });
+          });
+          
+          console.log('地図コンテナの移動も無効化しました');
+        }
+        
+        // 地図全体の移動を防ぐための追加制限
+        const allMapElements = mapRef.current?.querySelectorAll('*');
+        if (allMapElements) {
+          allMapElements.forEach(element => {
+            if (element instanceof HTMLElement) {
+              // 地図関連の要素のみ移動を制限
+              if (element.className.includes('gm-') || element.tagName === 'CANVAS') {
+                element.style.pointerEvents = 'none';
+                element.style.userSelect = 'none';
+                element.style.webkitUserSelect = 'none';
+              }
+            }
+          });
+          
+          console.log('地図要素全体の移動を無効化しました');
+        }
+        
       }, 1000);
 
       setMapInstance(map);
@@ -447,8 +502,9 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
           // 地図の移動を制限するCSSスタイル
           userSelect: 'none',
           WebkitUserSelect: 'none',
-          MozUserSelect: 'none',
-          msUserSelect: 'none'
+          // 地図の移動を完全に無効化
+          overflow: 'hidden',
+          position: 'relative'
         }}
       />
       
@@ -469,6 +525,17 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
         </div>
         <div className="text-xs text-gray-500 mt-1">
           ズーム機能は利用可能
+        </div>
+      </div>
+      
+      {/* 地図移動制限の警告 */}
+      <div className="absolute top-4 right-4 bg-yellow-100 border border-yellow-300 px-3 py-2 rounded-lg shadow-md text-xs text-yellow-800">
+        <div className="flex items-center space-x-2">
+          <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+          <span>移動不可</span>
+        </div>
+        <div className="text-xs text-yellow-600 mt-1">
+          指で動かしても移動しません
         </div>
       </div>
     </div>
