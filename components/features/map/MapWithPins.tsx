@@ -57,6 +57,14 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
     const initializeMap = () => {
       if (!mapRef.current || !window.google || !window.google.maps) return;
 
+      // デバッグ: 利用可能なAPIクラスを確認
+      console.log('Google Maps API classes:', {
+        maps: window.google.maps,
+        Marker: window.google.maps.Marker,
+        // AdvancedMarkerElementが利用可能かチェック
+        hasAdvancedMarker: 'marker' in window.google.maps && 'AdvancedMarkerElement' in (window.google.maps as any).marker
+      });
+
       const map = new window.google.maps.Map(mapRef.current, {
         center: { lat: userLocation.latitude, lng: userLocation.longitude },
         zoom: 10,
@@ -101,8 +109,23 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
 
     const newMarkers: any[] = [];
 
+    // 非推奨警告を抑制するためのヘルパー関数
+    const createMarker = (options: any) => {
+      // AdvancedMarkerElementが利用可能な場合は使用
+      if ('marker' in window.google.maps && 'AdvancedMarkerElement' in (window.google.maps as any).marker) {
+        try {
+          return new (window.google.maps as any).marker.AdvancedMarkerElement(options);
+        } catch (error) {
+          console.warn('AdvancedMarkerElementの作成に失敗しました。従来のMarkerを使用します:', error);
+        }
+      }
+      
+      // フォールバック: 従来のMarkerを使用
+      return new window.google.maps.Marker(options);
+    };
+
     // ユーザーの現在位置にマーカー
-    const userMarker = new window.google.maps.Marker({
+    const userMarker = createMarker({
       position: { lat: userLocation.latitude, lng: userLocation.longitude },
       map: mapInstance,
       title: '現在地',
@@ -122,7 +145,7 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
 
     // 投稿のピンを表示
     nearbyPosts.forEach((post) => {
-      const marker = new window.google.maps.Marker({
+      const marker = createMarker({
         position: { lat: post.latitude, lng: post.longitude },
         map: mapInstance,
         title: `投稿 #${post.post_id}`,
