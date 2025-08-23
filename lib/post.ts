@@ -17,6 +17,87 @@ export async function savePostImageInfo(imageUrl: string, lat: number, lng: numb
   }
   return true;
 }
+
+/**
+ * 最新の投稿画像を取得（作成日時順）
+ * @param limit 取得件数
+ * @returns 投稿画像の配列
+ */
+export async function getRecentPostImages(limit: number = 20): Promise<any[]> {
+  const supabase = createClient();
+  
+  try {
+    const { data, error } = await supabase
+      .from('post_images')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching post images:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Failed to fetch post images:', error);
+    return [];
+  }
+}
+
+/**
+ * 投稿と画像を一緒に取得（作成日時順）
+ * @param limit 取得件数
+ * @returns 投稿と画像の組み合わせ配列
+ */
+export async function getPostsWithImages(limit: number = 20): Promise<any[]> {
+  const supabase = createClient();
+  
+  try {
+    // まず投稿を取得
+    const { data: posts, error: postsError } = await supabase
+      .from('posts')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (postsError) {
+      console.error('Error fetching posts:', postsError);
+      return [];
+    }
+
+    if (!posts || posts.length === 0) {
+      return [];
+    }
+
+    // 各投稿の画像を取得
+    const postsWithImages = [];
+    
+    for (const post of posts) {
+      const { data: images, error: imagesError } = await supabase
+        .from('post_images')
+        .select('*')
+        .eq('post_id', post.id)
+        .order('created_at', { ascending: false });
+
+      if (imagesError) {
+        console.error(`Error fetching images for post ${post.id}:`, imagesError);
+        continue;
+      }
+
+      postsWithImages.push({
+        ...post,
+        images: images || []
+      });
+    }
+
+    return postsWithImages;
+  } catch (error) {
+    console.error('Failed to fetch posts with images:', error);
+    return [];
+  }
+}
+
 /**
  * captionとuser_idを取得してpostテーブルに保存する関数
  * @param caption 投稿の本文
