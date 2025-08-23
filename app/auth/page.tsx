@@ -20,29 +20,27 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    console.log('======start======');
 
     try {
       if (isSignUp && username.trim().length === 0) {
         throw new Error('ユーザー名を入力してください');
       }
       if (isSignUp) {
+        console.log('======isSignUp======');
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            // emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         });
+        console.log('======error======');
         if (error) throw error;
+        console.log('======no error======');
 
-        // メール確認が不要な場合、直接ログイン状態にする
-        if (data.user && !data.session) {
-          // メール確認が必要な場合
-          setNotification(
-            '確認メールを送信しました。メールを確認してください。'
-          );
-        } else if (data.session && data.user) {
-          // メール確認が不要で直接ログインできた場合
+        // サインアップ成功時は直接ログイン状態にする
+        if (data.user) {
           // ユーザー情報を作成
           const userData = {
             id: data.user.id,
@@ -56,6 +54,7 @@ export default function LoginPage() {
           router.push('/');
         }
       } else {
+        console.log('======not isSignUp======');
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -64,6 +63,7 @@ export default function LoginPage() {
         router.push('/');
       }
     } catch (error) {
+      console.log('======error======');
       setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setLoading(false);

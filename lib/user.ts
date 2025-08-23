@@ -6,23 +6,32 @@ export async function createUser(
 ): Promise<User | null> {
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from('users')
-    .insert([userData])
-    .select()
-    .single();
+  console.log('createUser called with:', userData);
 
-  if (error) {
-    console.error('Error creating user:', {
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code,
-    });
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .insert([userData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating user:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        fullError: error,
+      });
+      return null;
+    }
+
+    console.log('User created successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('Unexpected error in createUser:', error);
     return null;
   }
-
-  return data;
 }
 
 export async function getUser(userId: string): Promise<User | null> {
