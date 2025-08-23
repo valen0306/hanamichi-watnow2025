@@ -91,9 +91,7 @@ export default function UserMapPage() {
     setSupabaseError('');
     
     try {
-      // Supabaseからのデータ取得を一時的にコメントアウト
-      /*
-      // 環境変数の確認
+      // Supabaseからのデータ取得
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       
@@ -126,7 +124,7 @@ export default function UserMapPage() {
       console.log('基本的なデータ取得結果:', { basicData, basicError });
       
       if (basicError) {
-        console.log('基本的なデータ取得エラー:', basicError);
+        console.error('基本的なデータ取得エラー:', basicError);
         
         // エラーの詳細を分析
         if (basicError.message.includes('does not exist')) {
@@ -221,9 +219,37 @@ export default function UserMapPage() {
         setLoadingPosts(false);
         return;
       }
-      */
 
-      // テストデータを使用
+      // 距離を計算して近い順にソート
+      const postsWithDistance = (data || [])
+        .map(post => {
+          const distance = calculateDistance(
+            userLocation.latitude,
+            userLocation.longitude,
+            post.latitude,
+            post.longitude
+          );
+          console.log(`投稿 ${post.post_id}: 距離 ${distance.toFixed(0)}m`); // 各投稿の距離
+          return {
+            ...post,
+            distance
+          };
+        })
+        .filter(post => {
+          const isWithinRange = post.distance <= 100000; // 100km以内
+          console.log(`投稿 ${post.post_id}: 100km以内 ${isWithinRange ? '○' : '×'}`); // 範囲内かチェック
+          return isWithinRange;
+        })
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 10); // 上位10件
+
+      console.log('フィルター後の投稿:', postsWithDistance); // フィルター後の結果
+      console.log('最終表示件数:', postsWithDistance.length); // 最終表示件数
+
+      setNearbyPosts(postsWithDistance);
+
+      /*
+      // テストデータを使用（コメントアウト）
       console.log('🧪 テストモード: Supabaseからのデータ取得をスキップし、テストデータを使用します');
       
       // 現在地を中心としたテストデータを生成
@@ -290,9 +316,23 @@ export default function UserMapPage() {
       console.log('最終表示件数:', postsWithDistance.length); // 最終表示件数
 
       setNearbyPosts(postsWithDistance);
+      */
     } catch (err) {
       console.error('投稿取得エラー:', err);
-      setSupabaseError('投稿データの取得中にエラーが発生しました');
+      console.error('エラーの詳細:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : 'No stack trace',
+        error: err
+      });
+      
+      let errorMessage = '投稿データの取得中にエラーが発生しました';
+      if (err instanceof Error) {
+        errorMessage = `投稿データの取得中にエラーが発生しました: ${err.message}`;
+      } else if (typeof err === 'object' && err !== null) {
+        errorMessage = `投稿データの取得中にエラーが発生しました: ${JSON.stringify(err)}`;
+      }
+      
+      setSupabaseError(errorMessage);
     } finally {
       setLoadingPosts(false);
     }
