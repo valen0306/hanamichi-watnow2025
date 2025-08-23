@@ -44,6 +44,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // 環境変数をチェック
+  const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const shouldLoadGoogleMaps = googleMapsApiKey && googleMapsApiKey !== 'undefined' && googleMapsApiKey.trim() !== '';
+  
+  // デバッグ用ログ（開発環境のみ）
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Google Maps API 環境変数チェック:', {
+      apiKey: googleMapsApiKey,
+      apiKeyType: typeof googleMapsApiKey,
+      shouldLoad: shouldLoadGoogleMaps,
+      isUndefined: googleMapsApiKey === 'undefined',
+      isEmpty: googleMapsApiKey === '',
+      trimmed: googleMapsApiKey?.trim()
+    });
+  }
+  
   return (
     <html lang="ja">
       <head>
@@ -53,12 +69,27 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="WatNow" />
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
         
-        {/* Google Maps API - 一度だけ読み込み */}
-        <script
-          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
-          async
-          defer
-        />
+        {/* Google Maps API - 環境変数が正しく設定されている場合のみ読み込み */}
+        {shouldLoadGoogleMaps ? (
+          <script
+            src={`https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places`}
+            async
+            defer
+          />
+        ) : (
+          // 開発環境でのみ警告を表示
+          process.env.NODE_ENV === 'development' && (
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  console.warn('Google Maps API キーが設定されていません。');
+                  console.warn('地図機能を使用するには、.env.local ファイルに以下を設定してください：');
+                  console.warn('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_actual_api_key_here');
+                `
+              }}
+            />
+          )
+        )}
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

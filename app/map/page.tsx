@@ -66,6 +66,7 @@ export default function UserMapPage() {
       },
       (error) => {
         let errorMessage = '位置情報の取得に失敗しました';
+        let isDevelopmentError = false;
         
         switch (error.code) {
           case error.PERMISSION_DENIED:
@@ -79,8 +80,20 @@ export default function UserMapPage() {
             break;
         }
         
+        // 開発環境での位置情報制限を検出
+        if (error.message && error.message.includes('Only secure origins are allowed')) {
+          errorMessage = '位置情報の取得にはHTTPS環境が必要です';
+          isDevelopmentError = true;
+        }
+        
         console.error('❌ 位置情報取得エラー:', errorMessage, error);
-        setError(errorMessage);
+        
+        if (isDevelopmentError) {
+          setError(`${errorMessage}\n\n開発環境（localhost）では位置情報が取得できません。\n本番環境（HTTPS）では正常に動作します。`);
+        } else {
+          setError(errorMessage);
+        }
+        
         setLoading(false);
       },
       {
@@ -674,11 +687,81 @@ export default function UserMapPage() {
   }
 
   if (error) {
+    // 開発環境での位置情報制限エラーの場合
+    const isDevelopmentError = error.includes('HTTPS環境が必要');
+    
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg max-w-md">
-          <h2 className="text-lg font-bold mb-2">エラー</h2>
-          <p>{error}</p>
+        <div className={`border rounded-lg px-6 py-4 max-w-2xl ${
+          isDevelopmentError 
+            ? 'bg-blue-100 border-blue-400 text-blue-700' 
+            : 'bg-red-100 border-red-400 text-red-700'
+        }`}>
+          <h2 className="text-lg font-bold mb-2">
+            {isDevelopmentError ? '位置情報の制限について' : 'エラーが発生しました'}
+          </h2>
+          
+          {isDevelopmentError ? (
+            <div className="space-y-3">
+              <p className="text-sm">
+                現在の環境では位置情報を取得できません。これは開発環境（localhost）での制限です。
+              </p>
+              
+              <div className="p-3 bg-blue-50 rounded border border-blue-200">
+                <h3 className="font-semibold mb-2">このエラーについて:</h3>
+                <ul className="text-sm space-y-1">
+                  <li>• Geolocation APIはセキュリティ上の理由でHTTPS環境でのみ動作します</li>
+                  <li>• 開発環境（localhost）では位置情報が取得できません</li>
+                  <li>• 本番環境（HTTPS）では正常に動作します</li>
+                  <li>• このエラーはアプリケーションの動作に影響しません</li>
+                </ul>
+              </div>
+              
+              <div className="p-3 bg-yellow-50 rounded border border-yellow-200">
+                <h3 className="font-semibold mb-2">開発時の対処法:</h3>
+                <ul className="text-sm space-y-1">
+                  <li>• テスト用の位置情報を手動で設定する</li>
+                  <li>• 本番環境でテストする</li>
+                  <li>• 位置情報なしでアプリケーションの動作を確認する</li>
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <p>{error}</p>
+          )}
+          
+          <div className="mt-4 flex space-x-3">
+            <button 
+              onClick={() => window.location.reload()} 
+              className={`px-4 py-2 rounded text-white transition-colors ${
+                isDevelopmentError 
+                  ? 'bg-blue-600 hover:bg-blue-700' 
+                  : 'bg-red-600 hover:bg-red-700'
+              }`}
+            >
+              ページを再読み込み
+            </button>
+            
+            {isDevelopmentError && (
+              <button 
+                onClick={() => {
+                  // テスト用の位置情報を設定（東京駅周辺）
+                  const testLocation = {
+                    latitude: 35.6812362,
+                    longitude: 139.7671248
+                  };
+                  setLocation(testLocation);
+                  setError('');
+                  setLoading(false);
+                  fetchCityName(testLocation.latitude, testLocation.longitude);
+                  fetchNearbyPosts(testLocation);
+                }}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
+              >
+                テスト用位置情報を使用
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
