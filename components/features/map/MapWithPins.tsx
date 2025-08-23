@@ -13,6 +13,7 @@ interface NearbyPost {
   longitude: number;
   distance: number;
   created_at: string;
+  image_url?: string; // 投稿画像のURL
 }
 
 interface MapWithPinsProps {
@@ -287,26 +288,83 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
 
     // ユーザーの現在位置にマーカー
     console.log('ユーザーマーカー作成開始');
+    
+    // カスタムユーザーマーカーのHTML要素を作成
+    const userMarkerElement = document.createElement('div');
+    userMarkerElement.innerHTML = `
+      <div style="
+        position: relative;
+        width: 60px;
+        height: 60px;
+        cursor: pointer;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+      ">
+        <!-- ユーザーアイコン -->
+        <div style="
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #4285F4, #34A853);
+          border: 3px solid white;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          position: absolute;
+          top: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="white"/>
+          </svg>
+        </div>
+        
+        <!-- ピンの矢印部分 -->
+        <div style="
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 8px solid transparent;
+          border-right: 8px solid transparent;
+          border-top: 12px solid #4285F4;
+          z-index: 1;
+        "></div>
+        
+        <!-- 現在地ラベル -->
+        <div style="
+          position: absolute;
+          top: -5px;
+          right: -5px;
+          background: #EA4335;
+          color: white;
+          border-radius: 50%;
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 8px;
+          font-weight: bold;
+          border: 2px solid white;
+          z-index: 3;
+        ">
+          現在
+        </div>
+      </div>
+    `;
+    
     const userMarker = createMarker({
       position: { lat: userLocation.latitude, lng: userLocation.longitude },
       map: mapInstance,
       title: '現在地',
-      label: {
-        text: '現在地',
-        color: 'white',
-        fontSize: '12px',
-        fontWeight: 'bold'
-      },
-      icon: {
-        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="8" fill="#4285F4" stroke="white" stroke-width="2"/>
-            <circle cx="12" cy="12" r="3" fill="white"/>
-          </svg>
-        `),
-        scaledSize: new window.google.maps.Size(24, 24),
-        anchor: new window.google.maps.Point(12, 12)
-      }
+      content: userMarkerElement,
+      // ピンの矢印部分が正確な位置を指すようにアンカーポイントを調整
+      anchor: { x: 30, y: 60 } // ピンの中心（30px）と矢印の先端（60px）
     });
 
     if (userMarker) {
@@ -321,26 +379,86 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
     nearbyPosts.forEach((post, index) => {
       console.log(`投稿${index + 1}のマーカー作成:`, post);
       
+      // カスタムピンのHTML要素を作成
+      const markerElement = document.createElement('div');
+      markerElement.innerHTML = `
+        <div style="
+          position: relative;
+          width: 60px;
+          height: 60px;
+          cursor: pointer;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        ">
+          <!-- 投稿画像 -->
+          <div style="
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+          ">
+            <img 
+              src="${post.image_url || 'https://via.placeholder.com/50x50/EA4335/FFFFFF?text=No+Image'}" 
+              alt="投稿画像"
+              style="
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+              "
+              onerror="this.src='https://via.placeholder.com/50x50/EA4335/FFFFFF?text=Error'"
+            />
+          </div>
+          
+          <!-- ピンの矢印部分 -->
+          <div style="
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 12px solid #EA4335;
+            z-index: 1;
+          "></div>
+          
+          <!-- 投稿番号ラベル -->
+          <div style="
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #4285F4;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            border: 2px solid white;
+            z-index: 3;
+          ">
+            ${index + 1}
+          </div>
+        </div>
+      `;
+      
       const marker = createMarker({
         position: { lat: post.latitude, lng: post.longitude },
         map: mapInstance,
         title: `投稿 #${post.post_id}`,
-        label: {
-          text: `${index + 1}`,
-          color: 'white',
-          fontSize: '10px',
-          fontWeight: 'bold'
-        },
-        icon: {
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 0C6.12 0 3 3.12 3 7c0 5.25 7 13 7 13s7-7.75 7-13c0-3.88-3.12-7-7-7z" fill="#EA4335"/>
-              <circle cx="10" cy="7" r="3" fill="white"/>
-            </svg>
-          `),
-          scaledSize: new window.google.maps.Size(20, 20),
-          anchor: new window.google.maps.Point(10, 20)
-        }
+        content: markerElement,
+        // ピンの矢印部分が正確な位置を指すようにアンカーポイントを調整
+        anchor: { x: 30, y: 60 } // ピンの中心（30px）と矢印の先端（60px）
       });
 
       if (marker) {
