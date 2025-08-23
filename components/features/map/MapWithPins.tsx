@@ -65,9 +65,28 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
         hasAdvancedMarker: 'marker' in window.google.maps && 'AdvancedMarkerElement' in (window.google.maps as any).marker
       });
 
+      // 初期ズームレベルを投稿の距離に基づいて調整
+      let initialZoom = 14; // デフォルトズームレベル
+      
+      if (nearbyPosts.length > 0) {
+        const maxDistance = Math.max(...nearbyPosts.map(post => post.distance));
+        console.log('初期化時の最大距離:', maxDistance, 'm');
+        
+        if (maxDistance <= 500) {
+          // 500m以内の場合は詳細表示
+          initialZoom = 16;
+        } else if (maxDistance <= 2000) {
+          // 2km以内の場合は中程度の詳細
+          initialZoom = 15;
+        } else if (maxDistance >= 10000) {
+          // 10km以上の場合は広範囲表示
+          initialZoom = 12;
+        }
+      }
+
       const map = new window.google.maps.Map(mapRef.current, {
         center: { lat: userLocation.latitude, lng: userLocation.longitude },
-        zoom: 10,
+        zoom: initialZoom, // 動的に計算されたズームレベル
         mapTypeId: window.google.maps.MapTypeId.ROADMAP,
         mapTypeControl: true,
         streetViewControl: false,
@@ -82,8 +101,53 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
         ]
       });
 
+      // 地図の移動を制限するためのCSSスタイルを適用
+      if (mapRef.current) {
+        const mapElement = mapRef.current.querySelector('.gm-style') || mapRef.current;
+        if (mapElement) {
+          (mapElement as HTMLElement).style.pointerEvents = 'none';
+          console.log('地図の移動を無効化しました（CSSレベル）');
+        }
+      }
+
+      // ズームコントロールのみ有効にする
+      const zoomControls = mapRef.current?.querySelectorAll('.gm-control-active');
+      if (zoomControls) {
+        zoomControls.forEach(control => {
+          (control as HTMLElement).style.pointerEvents = 'auto';
+        });
+        console.log('ズームコントロールは有効です');
+      }
+
+      // 地図の移動を制限するイベントリスナーを追加
+      setTimeout(() => {
+        // 地図要素の移動を制限
+        const mapCanvas = mapRef.current?.querySelector('canvas');
+        if (mapCanvas) {
+          mapCanvas.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('地図の移動が試行されましたが、無効化されています');
+          });
+          
+          mapCanvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('タッチでの地図移動が試行されましたが、無効化されています');
+          });
+          
+          console.log('地図の移動を無効化しました（JavaScriptレベル）');
+        }
+      }, 1000);
+
       setMapInstance(map);
       setMapLoaded(true);
+      
+      console.log('地図初期化完了:', {
+        center: { lat: userLocation.latitude, lng: userLocation.longitude },
+        zoom: initialZoom,
+        nearbyPostsCount: nearbyPosts.length
+      });
     };
 
     loadGoogleMaps();
@@ -95,7 +159,7 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
         markers.forEach(marker => marker.setMap(null));
       }
     };
-  }, [userLocation, mapLoaded]); // markersを依存関係から削除
+  }, [userLocation, mapLoaded, nearbyPosts]); // markersを依存関係から削除
 
   // 投稿のピンを表示
   useEffect(() => {
@@ -273,7 +337,8 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
             visible: isVisible,
             position: position,
             map: marker.getMap ? marker.getMap() : marker.map,
-            targetMap: mapInstance
+            targetMap: mapInstance,
+            markerType: marker.constructor.name
           });
         } catch (error) {
           console.warn(`マーカー${index + 1}の状態確認エラー:`, error);
@@ -285,6 +350,8 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
     if (newMarkers.length > 1) {
       console.log('地図の範囲調整開始');
       const bounds = new window.google.maps.LatLngBounds();
+      
+      // ユーザー位置と投稿マーカーの位置を境界に追加
       newMarkers.forEach((marker, index) => {
         try {
           const position = marker.getPosition ? marker.getPosition() : marker.position;
@@ -296,15 +363,77 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
       });
       
       console.log('地図範囲調整:', bounds.toString());
-      mapInstance.fitBounds(bounds);
       
-      // 最小ズームレベルを設定
-      const listener = window.google.maps.event.addListener(mapInstance, 'idle', () => {
-        if (mapInstance.getZoom() > 15) {
-          mapInstance.setZoom(15);
+      // 投稿の距離に基づいて適切なパディングを計算
+      let padding = 50; // デフォルトパディング
+      
+      // 近い投稿（1km以内）が多い場合はパディングを小さく
+      // 遠い投稿（5km以上）がある場合はパディングを大きく
+      if (nearbyPosts.length > 0) {
+        const maxDistance = Math.max(...nearbyPosts.map(post => post.distance));
+        console.log('最大距離:', maxDistance, 'm');
+        
+        if (maxDistance <= 1000) {
+          // 1km以内の場合は小さなパディング
+          padding = 30;
+          console.log('近距離投稿のため、パディングを30pxに設定');
+        } else if (maxDistance >= 5000) {
+          // 5km以上の場合は大きなパディング
+          padding = 80;
+          console.log('遠距離投稿のため、パディングを80pxに設定');
         }
+      }
+      
+      // 境界にパディングを追加して、マーカーが端に寄りすぎないようにする
+      const paddingOptions = {
+        top: padding,
+        right: padding,
+        bottom: padding,
+        left: padding
+      };
+      
+      // 地図の範囲を設定
+      mapInstance.fitBounds(bounds, paddingOptions);
+      
+      // 適切なズームレベルを設定
+      const listener = window.google.maps.event.addListener(mapInstance, 'idle', () => {
+        const currentZoom = mapInstance.getZoom();
+        console.log('現在のズームレベル:', currentZoom);
+        
+        // ズームレベルの調整
+        let targetZoom = currentZoom;
+        
+        if (currentZoom > 18) {
+          // ズームしすぎている場合は調整
+          targetZoom = 18;
+          console.log('ズームレベルを18に調整');
+        } else if (currentZoom < 12) {
+          // ズームが足りない場合は調整
+          targetZoom = 12;
+          console.log('ズームレベルを12に調整');
+        }
+        
+        // 必要に応じてズームレベルを設定
+        if (targetZoom !== currentZoom) {
+          mapInstance.setZoom(targetZoom);
+        }
+        
+        // リスナーを削除
         window.google.maps.event.removeListener(listener);
+        
+        console.log('最終的なズームレベル:', targetZoom);
+        console.log('地図範囲調整完了');
       });
+    } else if (newMarkers.length === 1) {
+      // マーカーが1つの場合（ユーザー位置のみ）
+      console.log('マーカーが1つの場合の処理');
+      const userPosition = newMarkers[0].getPosition ? newMarkers[0].getPosition() : newMarkers[0].position;
+      
+      // ユーザー位置を中心に、適切なズームレベルで表示
+      mapInstance.setCenter(userPosition);
+      mapInstance.setZoom(15);
+      
+      console.log('ユーザー位置中心で地図を表示（ズームレベル15）');
     }
 
   }, [mapInstance, nearbyPosts, userLocation]); // markersを依存関係から削除
@@ -314,6 +443,13 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
       <div 
         ref={mapRef} 
         className="w-full h-full"
+        style={{
+          // 地図の移動を制限するCSSスタイル
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          MozUserSelect: 'none',
+          msUserSelect: 'none'
+        }}
       />
       
       {!mapLoaded && (
@@ -324,6 +460,17 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
           </div>
         </div>
       )}
+      
+      {/* 地図移動制限の説明 */}
+      <div className="absolute top-4 left-4 bg-white bg-opacity-90 px-3 py-2 rounded-lg shadow-md text-xs text-gray-600">
+        <div className="flex items-center space-x-2">
+          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+          <span>地図は固定されています</span>
+        </div>
+        <div className="text-xs text-gray-500 mt-1">
+          ズーム機能は利用可能
+        </div>
+      </div>
     </div>
   );
 };
