@@ -23,6 +23,7 @@ export default function UserMapPage() {
   const [nearbyPosts, setNearbyPosts] = useState<NearbyPost[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [supabaseError, setSupabaseError] = useState<string>('');
+  const [isAccordionOpen, setIsAccordionOpen] = useState(false);
 
   // 現在地を取得
   useEffect(() => {
@@ -40,6 +41,14 @@ export default function UserMapPage() {
         };
         setLocation(newLocation);
         setLoading(false);
+        
+        // 位置情報をコンソールに出力
+        console.log('📍 現在の位置情報を取得しました:', {
+          latitude: newLocation.latitude,
+          longitude: newLocation.longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: new Date().toISOString()
+        });
         
         // 位置情報が取得できたら近い投稿を検索
         if (newLocation) {
@@ -61,6 +70,7 @@ export default function UserMapPage() {
             break;
         }
         
+        console.error('❌ 位置情報取得エラー:', errorMessage, error);
         setError(errorMessage);
         setLoading(false);
       },
@@ -77,6 +87,8 @@ export default function UserMapPage() {
     setSupabaseError('');
     
     try {
+      // Supabaseからのデータ取得を一時的にコメントアウト
+      /*
       // 環境変数の確認
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -110,7 +122,7 @@ export default function UserMapPage() {
       console.log('基本的なデータ取得結果:', { basicData, basicError });
       
       if (basicError) {
-        console.error('基本的なデータ取得エラー:', basicError);
+        console.log('基本的なデータ取得エラー:', basicError);
         
         // エラーの詳細を分析
         if (basicError.message.includes('does not exist')) {
@@ -205,9 +217,50 @@ export default function UserMapPage() {
         setLoadingPosts(false);
         return;
       }
+      */
+
+      // テストデータを使用
+      console.log('🧪 テストモード: Supabaseからのデータ取得をスキップし、テストデータを使用します');
+      
+      // 現在地を中心としたテストデータを生成
+      const testPosts = [
+        {
+          post_id: 'test_001',
+          latitude: userLocation.latitude + 0.001, // 約100m北
+          longitude: userLocation.longitude + 0.001, // 約100m東
+          created_at: new Date().toISOString()
+        },
+        {
+          post_id: 'test_002',
+          latitude: userLocation.latitude - 0.002, // 約200m南
+          longitude: userLocation.longitude - 0.001, // 約100m西
+          created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // 1日前
+        },
+        {
+          post_id: 'test_003',
+          latitude: userLocation.latitude + 0.003, // 約300m北
+          longitude: userLocation.longitude - 0.002, // 約200m西
+          created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2日前
+        },
+        {
+          post_id: 'test_004',
+          latitude: userLocation.latitude - 0.001, // 約100m南
+          longitude: userLocation.longitude + 0.003, // 約300m東
+          created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3日前
+        },
+        {
+          post_id: 'test_005',
+          latitude: userLocation.latitude + 0.002, // 約200m北
+          longitude: userLocation.longitude + 0.002, // 約200m東
+          created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() // 4日前
+        }
+      ];
+
+      console.log('📊 生成されたテストデータ:', testPosts);
+      console.log('📍 現在地を中心としたテスト投稿を生成しました（100m〜300mの範囲）');
 
       // 距離を計算して近い順にソート
-      const postsWithDistance = (data || [])
+      const postsWithDistance = testPosts
         .map(post => {
           const distance = calculateDistance(
             userLocation.latitude,
@@ -282,110 +335,90 @@ export default function UserMapPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        {/* 現在の位置情報 */}
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-          <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">
-            現在の位置情報
-          </h1>
-          
-          {location && (
+    <div className="w-full h-screen bg-gray-50 pb-8">
+      {/* 地図表示 - 画面いっぱい */}
+      <div className="w-full h-full">
+        {loadingPosts ? (
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
             <div className="text-center">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-blue-50 p-6 rounded-lg">
-                  <label className="block text-sm font-medium text-blue-600 mb-2">
-                    緯度 (Latitude)
-                  </label>
-                  <p className="text-2xl font-mono text-blue-800">
-                    {location.latitude.toFixed(6)}
-                  </p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">地図を読み込み中...</p>
+            </div>
+          </div>
+        ) : nearbyPosts.length > 0 ? (
+          <>
+            {/* 地図表示 */}
+            <div className="w-full h-full">
+              <MapWithPins 
+                userLocation={location!}
+                nearbyPosts={nearbyPosts}
+              />
+            </div>
+            
+            {/* 投稿リスト - 下側からスライドアコーディオン */}
+            <div className={`fixed bottom-0 right-0 w-full bg-white shadow-lg transition-transform duration-300 ease-in-out ${
+              isAccordionOpen ? 'translate-y-0' : 'translate-y-full'
+            }`} style={{ height: '80vh' }}>
+              {/* アコーディオントグルボタン */}
+              <button
+                onClick={() => setIsAccordionOpen(!isAccordionOpen)}
+                className={`absolute top-0 left-0 w-full transform -translate-y-full bg-white border border-gray-200 rounded-t-lg px-4 py-3 shadow-lg hover:bg-gray-50 transition-colors ${
+                  isAccordionOpen ? 'text-gray-600' : 'text-blue-600'
+                }`}
+              >
+                <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto"></div>
+              </button>
+              
+              {/* 投稿リストの内容 */}
+              <div className="h-full flex flex-col">
+                <div className="p-4 border-b border-gray-200 bg-gray-50">
+                  <h3 className="text-lg font-semibold text-gray-800">近くの投稿</h3>
+                  <p className="text-sm text-gray-600 mt-1">{nearbyPosts.length}件の投稿</p>
                 </div>
                 
-                <div className="bg-green-50 p-6 rounded-lg">
-                  <label className="block text-sm font-medium text-green-600 mb-2">
-                    経度 (Longitude)
-                  </label>
-                  <p className="text-2xl font-mono text-green-800">
-                    {location.longitude.toFixed(6)}
-                  </p>
+                <div className="flex-1 overflow-y-auto p-4">
+                  <div className="space-y-3">
+                    {nearbyPosts.map((post) => (
+                      <div key={post.post_id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="text-sm font-semibold text-gray-800">
+                            投稿 #{post.post_id}
+                          </h4>
+                          <span className="text-xs text-gray-500 bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                            {post.distance.toFixed(0)}m
+                          </span>
+                        </div>
+                        
+                        <div className="text-xs text-gray-600 space-y-1">
+                          <div className="flex items-center">
+                            <span className="w-16 text-gray-500">緯度:</span>
+                            <span className="font-mono">{post.latitude.toFixed(6)}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="w-16 text-gray-500">経度:</span>
+                            <span className="font-mono">{post.longitude.toFixed(6)}</span>
+                          </div>
+                          {post.created_at && (
+                            <div className="flex items-center pt-1">
+                              <span className="w-16 text-gray-500">投稿日:</span>
+                              <span className="text-xs">{new Date(post.created_at).toLocaleDateString('ja-JP')}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-              
-              <div className="bg-gray-100 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">
-                  この位置情報はページ遷移時に自動で取得されました
-                </p>
-              </div>
             </div>
-          )}
-        </div>
-
-        {/* 近い投稿の表示 */}
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
-            近くの投稿
-          </h2>
-          
-          {/* Supabaseエラーの表示 */}
-          {supabaseError && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
-              <strong>Supabaseエラー:</strong> {supabaseError}
-            </div>
-          )}
-          
-          {loadingPosts ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">近くの投稿を検索中...</p>
-            </div>
-          ) : nearbyPosts.length > 0 ? (
-            <>
-              {/* 地図表示 */}
-              <div className="mb-8">
-                <MapWithPins 
-                  userLocation={location!}
-                  nearbyPosts={nearbyPosts}
-                />
-              </div>
-              
-              {/* 投稿リスト */}
-              <div className="space-y-4">
-                {nearbyPosts.map((post) => (
-                  <div key={post.post_id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg font-semibold text-gray-800">
-                        投稿 #{post.post_id}
-                      </h3>
-                      <span className="text-sm text-gray-500">
-                        {post.distance.toFixed(0)}m
-                      </span>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                      <div>
-                        <span className="font-medium">緯度:</span> {post.latitude.toFixed(6)}
-                      </div>
-                      <div>
-                        <span className="font-medium">経度:</span> {post.longitude.toFixed(6)}
-                      </div>
-                    </div>
-                    
-                    {post.created_at && (
-                      <div className="mt-2 text-xs text-gray-500">
-                        投稿日時: {new Date(post.created_at).toLocaleString('ja-JP')}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-8">
+          </>
+        ) : (
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+            <div className="text-center">
               <p className="text-gray-600">100km以内に投稿が見つかりませんでした</p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

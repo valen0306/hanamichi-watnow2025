@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 
 interface Location {
   latitude: number;
@@ -87,14 +87,18 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
         markers.forEach(marker => marker.setMap(null));
       }
     };
-  }, [userLocation, mapLoaded, markers]);
+  }, [userLocation, mapLoaded]); // markersを依存関係から削除
 
   // 投稿のピンを表示
   useEffect(() => {
     if (!mapInstance || !nearbyPosts.length || !window.google || !window.google.maps) return;
 
-    // 既存のマーカーを削除
-    markers.forEach(marker => marker.setMap(null));
+    // 既存のマーカーを削除（前回のマーカーをクリーンアップ）
+    setMarkers(prevMarkers => {
+      prevMarkers.forEach(marker => marker.setMap(null));
+      return [];
+    });
+
     const newMarkers: any[] = [];
 
     // ユーザーの現在位置にマーカー
@@ -182,25 +186,17 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
       });
     }
 
-  }, [mapInstance, nearbyPosts, userLocation, markers]);
+  }, [mapInstance, nearbyPosts, userLocation]); // markersを依存関係から削除
 
   return (
-    <div className="w-full">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">地図表示</h3>
-        <p className="text-sm text-gray-600">
-          📍 青い丸: 現在地 | 🔴 赤いピン: 投稿位置
-        </p>
-      </div>
-      
+    <div className="w-full h-full">
       <div 
         ref={mapRef} 
-        className="w-full h-96 rounded-lg border border-gray-300 overflow-hidden"
-        style={{ minHeight: '400px' }}
+        className="w-full h-full"
       />
       
       {!mapLoaded && (
-        <div className="w-full h-96 bg-gray-100 rounded-lg border border-gray-300 flex items-center justify-center">
+        <div className="w-full h-full bg-gray-100 flex items-center justify-center absolute inset-0">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
             <p className="text-sm text-gray-600">地図を読み込み中...</p>
