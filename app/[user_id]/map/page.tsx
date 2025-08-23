@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import MapWithPins from '../../components/MapWithPins';
 
 interface Location {
   latitude: number;
@@ -339,37 +340,46 @@ export default function UserMapPage() {
               <p className="text-gray-600">近くの投稿を検索中...</p>
             </div>
           ) : nearbyPosts.length > 0 ? (
-            <div className="space-y-4">
-              {nearbyPosts.map((post, index) => (
-                <div key={post.post_id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      投稿 #{post.post_id}
-                    </h3>
-                    <span className="text-sm text-gray-500">
-                      {post.distance.toFixed(0)}m
-                    </span>
+            <>
+              {/* 地図表示 */}
+              <div className="mb-8">
+                <MapWithPins 
+                  userLocation={location!}
+                  nearbyPosts={nearbyPosts}
+                />
+              </div>
+              
+              {/* 投稿リスト */}
+              <div className="space-y-4">
+                {nearbyPosts.map((post, index) => (
+                  <div key={post.post_id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        投稿 #{post.post_id}
+                      </h3>
+                      <span className="text-sm text-gray-500">
+                        {post.distance.toFixed(0)}m
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                      <div>
+                        <span className="font-medium">緯度:</span> {post.latitude.toFixed(6)}
+                      </div>
+                      <div>
+                        <span className="font-medium">経度:</span> {post.longitude.toFixed(6)}
+                      </div>
+                    </div>
+                    
+                    {post.created_at && (
+                      <div className="mt-2 text-xs text-gray-500">
+                        投稿日時: {new Date(post.created_at).toLocaleString('ja-JP')}
+                      </div>
+                    )}
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                    <div>
-                      <span className="font-medium">緯度:</span> {post.latitude.toFixed(6)}
-                    </div>
-                    <div>
-                      <span className="font-medium">経度:</span> {post.longitude.toFixed(6)}
-                    </div>
-                  </div>
-                  
-                  
-                  
-                  {post.created_at && (
-                    <div className="mt-2 text-xs text-gray-500">
-                      投稿日時: {new Date(post.created_at).toLocaleString('ja-JP')}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           ) : (
             <div className="text-center py-8">
               <p className="text-gray-600">100km以内に投稿が見つかりませんでした</p>
