@@ -101,9 +101,23 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
   useEffect(() => {
     if (!mapInstance || !nearbyPosts.length || !window.google || !window.google.maps) return;
 
+    console.log('マーカー作成開始:', {
+      mapInstance: !!mapInstance,
+      nearbyPostsCount: nearbyPosts.length,
+      userLocation,
+      googleMapsAvailable: !!(window.google && window.google.maps)
+    });
+
     // 既存のマーカーを削除（前回のマーカーをクリーンアップ）
     setMarkers(prevMarkers => {
-      prevMarkers.forEach(marker => marker.setMap(null));
+      console.log('既存マーカー削除:', prevMarkers.length);
+      prevMarkers.forEach(marker => {
+        try {
+          marker.setMap(null);
+        } catch (error) {
+          console.warn('マーカー削除エラー:', error);
+        }
+      });
       return [];
     });
 
@@ -111,24 +125,59 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
 
     // 非推奨警告を抑制するためのヘルパー関数
     const createMarker = (options: any) => {
+      console.log('マーカー作成オプション:', options);
+      
       // AdvancedMarkerElementが利用可能な場合は使用
       if ('marker' in window.google.maps && 'AdvancedMarkerElement' in (window.google.maps as any).marker) {
         try {
-          return new (window.google.maps as any).marker.AdvancedMarkerElement(options);
+          console.log('AdvancedMarkerElementを使用してマーカーを作成');
+          const marker = new (window.google.maps as any).marker.AdvancedMarkerElement(options);
+          console.log('AdvancedMarkerElement作成成功:', marker);
+          return marker;
         } catch (error) {
           console.warn('AdvancedMarkerElementの作成に失敗しました。従来のMarkerを使用します:', error);
         }
       }
       
       // フォールバック: 従来のMarkerを使用
-      return new window.google.maps.Marker(options);
+      try {
+        console.log('従来のMarkerを使用してマーカーを作成');
+        const marker = new window.google.maps.Marker(options);
+        console.log('従来のMarker作成成功:', marker);
+        return marker;
+      } catch (error) {
+        console.error('マーカー作成に失敗:', error);
+        
+        // 最終フォールバック: シンプルなデフォルトマーカー
+        try {
+          console.log('シンプルなデフォルトマーカーを作成');
+          const simpleOptions = {
+            position: options.position,
+            map: options.map,
+            title: options.title
+          };
+          const marker = new window.google.maps.Marker(simpleOptions);
+          console.log('シンプルなデフォルトマーカー作成成功:', marker);
+          return marker;
+        } catch (fallbackError) {
+          console.error('フォールバックマーカー作成も失敗:', fallbackError);
+          return null;
+        }
+      }
     };
 
     // ユーザーの現在位置にマーカー
+    console.log('ユーザーマーカー作成開始');
     const userMarker = createMarker({
       position: { lat: userLocation.latitude, lng: userLocation.longitude },
       map: mapInstance,
       title: '現在地',
+      label: {
+        text: '現在地',
+        color: 'white',
+        fontSize: '12px',
+        fontWeight: 'bold'
+      },
       icon: {
         url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -141,14 +190,28 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
       }
     });
 
-    newMarkers.push(userMarker);
+    if (userMarker) {
+      console.log('ユーザーマーカー作成成功:', userMarker);
+      newMarkers.push(userMarker);
+    } else {
+      console.error('ユーザーマーカーの作成に失敗');
+    }
 
     // 投稿のピンを表示
-    nearbyPosts.forEach((post) => {
+    console.log('投稿マーカー作成開始');
+    nearbyPosts.forEach((post, index) => {
+      console.log(`投稿${index + 1}のマーカー作成:`, post);
+      
       const marker = createMarker({
         position: { lat: post.latitude, lng: post.longitude },
         map: mapInstance,
         title: `投稿 #${post.post_id}`,
+        label: {
+          text: `${index + 1}`,
+          color: 'white',
+          fontSize: '10px',
+          fontWeight: 'bold'
+        },
         icon: {
           url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -161,43 +224,78 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
         }
       });
 
-      // 情報ウィンドウを作成
-      const infoWindow = new window.google.maps.InfoWindow({
-        content: `
-          <div style="padding: 12px; max-width: 250px;">
-            <h3 style="margin: 0 0 8px 0; font-size: 16px; color: #333; font-weight: bold;">
-              投稿 #${post.post_id}
-            </h3>
-            <div style="margin-bottom: 8px;">
-              <strong>距離:</strong> ${post.distance.toFixed(0)}m
-            </div>
-            <div style="margin-bottom: 8px;">
-              <strong>緯度:</strong> ${post.latitude.toFixed(6)}<br>
-              <strong>経度:</strong> ${post.longitude.toFixed(6)}
-            </div>
-            <div style="font-size: 12px; color: #666;">
-              投稿日時: ${new Date(post.created_at).toLocaleString('ja-JP')}
-            </div>
-          </div>
-        `
-      });
+      if (marker) {
+        console.log(`投稿${index + 1}マーカー作成成功:`, marker);
 
-      // マーカークリックで情報ウィンドウを表示
-      marker.addListener('click', () => {
-        infoWindow.open(mapInstance, marker);
-      });
+        // 情報ウィンドウを作成
+        const infoWindow = new window.google.maps.InfoWindow({
+          content: `
+            <div style="padding: 12px; max-width: 250px;">
+              <h3 style="margin: 0 0 8px 0; font-size: 16px; color: #333; font-weight: bold;">
+                投稿 #${post.post_id}
+              </h3>
+              <div style="margin-bottom: 8px;">
+                <strong>距離:</strong> ${post.distance.toFixed(0)}m
+              </div>
+              <div style="margin-bottom: 8px;">
+                <strong>緯度:</strong> ${post.latitude.toFixed(6)}<br>
+                <strong>経度:</strong> ${post.longitude.toFixed(6)}
+              </div>
+              <div style="font-size: 12px; color: #666;">
+                投稿日時: ${new Date(post.created_at).toLocaleString('ja-JP')}
+              </div>
+            </div>
+          `
+        });
 
-      newMarkers.push(marker);
+        // マーカークリックで情報ウィンドウを表示
+        marker.addListener('click', () => {
+          infoWindow.open(mapInstance, marker);
+        });
+
+        newMarkers.push(marker);
+      } else {
+        console.error(`投稿${index + 1}マーカーの作成に失敗`);
+      }
     });
 
+    console.log('作成されたマーカー数:', newMarkers.length);
     setMarkers(newMarkers);
+
+    // マーカーの表示状態を確認
+    setTimeout(() => {
+      console.log('マーカー表示状態確認:');
+      newMarkers.forEach((marker, index) => {
+        try {
+          const isVisible = marker.getMap ? marker.getMap() === mapInstance : marker.map === mapInstance;
+          const position = marker.getPosition ? marker.getPosition() : marker.position;
+          console.log(`マーカー${index + 1}:`, {
+            visible: isVisible,
+            position: position,
+            map: marker.getMap ? marker.getMap() : marker.map,
+            targetMap: mapInstance
+          });
+        } catch (error) {
+          console.warn(`マーカー${index + 1}の状態確認エラー:`, error);
+        }
+      });
+    }, 1000);
 
     // すべてのマーカーが表示されるように地図の範囲を調整
     if (newMarkers.length > 1) {
+      console.log('地図の範囲調整開始');
       const bounds = new window.google.maps.LatLngBounds();
-      newMarkers.forEach(marker => {
-        bounds.extend(marker.getPosition());
+      newMarkers.forEach((marker, index) => {
+        try {
+          const position = marker.getPosition ? marker.getPosition() : marker.position;
+          console.log(`マーカー${index + 1}の位置:`, position);
+          bounds.extend(position);
+        } catch (error) {
+          console.warn(`マーカー${index + 1}の位置取得エラー:`, error);
+        }
       });
+      
+      console.log('地図範囲調整:', bounds.toString());
       mapInstance.fitBounds(bounds);
       
       // 最小ズームレベルを設定
