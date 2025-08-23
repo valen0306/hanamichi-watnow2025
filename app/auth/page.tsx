@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { AuthInput } from '@/components/ui/AuthInput';
 
 export default function AuthPage() {
   const [email, setEmail] = useState('');
@@ -97,29 +99,34 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            {isSignUp ? 'アカウント作成' : 'ログイン'}
-          </h2>
+        {/* ロゴエリア */}
+        <div className="text-center">
+          {/* hanamichiロゴ画像 */}
+          <div className="w-48 h-16 relative mx-auto mb-8">
+            <Image
+              src="/hanamichi-logo.png"
+              alt="hanamichi"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
         </div>
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+          <div className="space-y-4">
             <div>
               <label htmlFor="email" className="sr-only">
                 メールアドレス
               </label>
-              <input
+              <AuthInput
                 id="email"
                 name="email"
                 type="email"
                 autoComplete="email"
                 required
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm ${
-                  isSignUp ? 'rounded-t-md' : 'rounded-t-md rounded-b-md'
-                }`}
                 placeholder="メールアドレス"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -130,13 +137,12 @@ export default function AuthPage() {
                 <label htmlFor="username" className="sr-only">
                   ユーザー名
                 </label>
-                <input
+                <AuthInput
                   id="username"
                   name="username"
                   type="text"
                   autoComplete="username"
                   required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                   placeholder="ユーザー名"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -147,15 +153,12 @@ export default function AuthPage() {
               <label htmlFor="password" className="sr-only">
                 パスワード
               </label>
-              <input
+              <AuthInput
                 id="password"
                 name="password"
                 type="password"
                 autoComplete="current-password"
                 required
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm ${
-                  isSignUp ? 'rounded-b-md' : 'rounded-t-md rounded-b-md'
-                }`}
                 placeholder="パスワード"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -164,7 +167,7 @@ export default function AuthPage() {
           </div>
 
           {error && (
-            <div className="text-red-600 text-sm text-center">
+            <div className="text-red-500 text-sm text-center">
               {error}
             </div>
           )}
@@ -179,14 +182,17 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={loading}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
+              className={`w-full py-3 px-4 border border-[#000000]/54 rounded-lg text-sm font-medium transition-all duration-200 ${
                 loading
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+                  ? 'bg-gray-400 text-white cursor-not-allowed'
+                  : 'bg-[#FEF4F4] text-[#000000]/54 hover:bg-[#FEF4F4]/80 focus:outline-none focus:ring-2 focus:ring-[#000000]/54'
               }`}
             >
               {loading ? (
-                '処理中...'
+                <div className="flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-[#000000]/54 border-t-transparent rounded-full animate-spin mr-2"></div>
+                  処理中...
+                </div>
               ) : (
                 isSignUp ? 'アカウント作成' : 'ログイン'
               )}
@@ -197,9 +203,9 @@ export default function AuthPage() {
             <button
               type="button"
               onClick={toggleMode}
-              className="text-indigo-600 hover:text-indigo-500 text-sm"
+              className="text-[#000000]/54 hover:text-[#000000]/70 text-sm transition-colors duration-200"
             >
-              {isSignUp ? '既にアカウントをお持ちですか？ログイン' : 'アカウントをお持ちでないですか？作成'}
+              {isSignUp ? '既にアカウントをお持ちですか？ログイン' : 'アカウントをお持ちでない方はこちら'}
             </button>
           </div>
         </form>
