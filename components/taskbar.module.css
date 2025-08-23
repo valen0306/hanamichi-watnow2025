@@ -1,0 +1,30 @@
+.taskbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: FFCDD4;
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+  z-index: 100;
+}
+.taskbar ul {
+  display: flex;
+  justify-content: space-around;
+  margin: 0;
+  padding: 0.5rem 0;
+  list-style: none;
+}
+.taskbar li {
+  flex: 1;
+  text-align: center;
+}
+.taskbar a {
+  color: #333;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: color 0.2s;
+}
+.taskbar a:hover {
+  color: #2563eb;
+}
