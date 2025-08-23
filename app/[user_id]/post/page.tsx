@@ -99,6 +99,32 @@ const CameraPost: React.FC = () => {
     upload();
   };
 
+  useEffect(() => {
+    if (isPosted) {
+      // 投稿完了後、初期状態に戻して再度カメラ起動
+      setPhoto(null);
+      setComment("");
+      setIsPosted(false);
+      setLocation(null);
+      setLocationError("");
+      setUploadError("");
+      // カメラ再起動
+      const startCamera = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" },
+          });
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (err) {
+          alert("カメラの起動に失敗しました");
+        }
+      };
+      startCamera();
+    }
+  }, [isPosted]);
+
   return (
     <div>
       {!photo && (

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { createUser } from '@/lib/user';
 
 export default function AuthPage() {
   const [email, setEmail] = useState('');

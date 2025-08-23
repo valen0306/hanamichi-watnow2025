@@ -80,3 +80,22 @@ export async function uploadImageToPostImages(file: Blob | File | Uint8Array, fi
     return null;
   }
 }
+
+// Supabaseストレージのpost_imagesバケットから指定ファイル名の公開URLを取得する関数
+
+
+export function getPostImagePublicUrl(fileName: string): string | null {
+  try {
+    const supabase = createClient();
+    const bucket = "post_images";
+    const { data } = supabase.storage.from(bucket).getPublicUrl(fileName);
+    if (!data || !data.publicUrl) {
+      console.error("公開URL取得失敗: dataがnullです", JSON.stringify(data, null, 2));
+      return null;
+    }
+    return data.publicUrl;
+  } catch (err) {
+    console.error("公開URL取得例外:", err);
+    return null;
+  }
+}
