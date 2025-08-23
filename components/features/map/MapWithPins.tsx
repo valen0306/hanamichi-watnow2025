@@ -516,28 +516,6 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
           </div>
         </div>
       )}
-      
-      {/* 地図移動制限の説明 */}
-      <div className="absolute top-4 left-4 bg-white bg-opacity-90 px-3 py-2 rounded-lg shadow-md text-xs text-gray-600">
-        <div className="flex items-center space-x-2">
-          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-          <span>地図は固定されています</span>
-        </div>
-        <div className="text-xs text-gray-500 mt-1">
-          ズーム機能は利用可能
-        </div>
-      </div>
-      
-      {/* 地図移動制限の警告 */}
-      <div className="absolute top-4 right-4 bg-yellow-100 border border-yellow-300 px-3 py-2 rounded-lg shadow-md text-xs text-yellow-800">
-        <div className="flex items-center space-x-2">
-          <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-          <span>移動不可</span>
-        </div>
-        <div className="text-xs text-yellow-600 mt-1">
-          指で動かしても移動しません
-        </div>
-      </div>
     </div>
   );
 };
