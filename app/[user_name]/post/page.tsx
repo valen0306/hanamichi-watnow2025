@@ -39,6 +39,12 @@ const CameraPost: React.FC = () => {
         ctx.drawImage(videoRef.current, 0, 0, width, height);
         const imageData = canvasRef.current.toDataURL("image/png");
         setPhoto(imageData);
+        // カメラ機能（ストリーム）を停止
+        const stream = videoRef.current.srcObject as MediaStream | null;
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          videoRef.current.srcObject = null;
+        }
         // 位置情報取得
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
