@@ -1,6 +1,6 @@
 import React from 'react';
 
-// ボタンが受け取るpropsの型を定義します。
+// Propsの型を定義（オプションでonClickとclassNameを受け取る）
 interface ClipButtonProps {
   onClick?: () => void;
   className?: string;
