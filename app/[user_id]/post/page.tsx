@@ -155,7 +155,7 @@ const CameraPost: React.FC = () => {
       <canvas ref={canvasRef} style={{ display: "none" }} />
       {photo && !isPosted && (
         <div style={{ position: "relative" }}>
-          <h3>撮影した写真</h3>
+          <h3 className="text-red-500">撮影した写真</h3>
           <div style={{ position: "relative", width: "100%" }}>
             <img src={photo} alt="撮影画像" style={{ width: "100%" }} />
             {/* 位置情報を写真下部中央に表示 */}
@@ -179,6 +179,7 @@ const CameraPost: React.FC = () => {
           </div>
           <div>
             <textarea
+              className=""
               value={comment}
               onChange={e => setComment(e.target.value)}
               placeholder="コメントを入力してください"
