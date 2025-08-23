@@ -6,6 +6,7 @@ import { uploadImageToPostImages, dataURLtoBlob } from "@/lib/strage";
 import React, { useRef, useEffect, useState } from "react";
 
 const CameraPost: React.FC = () => {
+  const [uploadError, setUploadError] = useState<string>("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [photo, setPhoto] = useState<string | null>(null);
@@ -76,8 +77,9 @@ const CameraPost: React.FC = () => {
       if (url) {
         // ここでurlをDB保存などに利用可能
         alert("画像アップロード成功: " + url);
+        setUploadError("");
       } else {
-        alert("投稿完了");
+        setUploadError("アップロード失敗");
       }
       setIsPosted(true);
     };
@@ -129,6 +131,9 @@ const CameraPost: React.FC = () => {
             <button disabled={!comment} onClick={() => { console.log('投稿ボタンが押下できました'); }}>投稿</button>
             <button onClick={() => window.location.reload()}>再撮影</button>
           </div>
+          {uploadError && (
+            <div style={{ color: "red", marginTop: 12, textAlign: "center" }}>{uploadError}</div>
+          )}
         </div>
       )}
       {isPosted && (
