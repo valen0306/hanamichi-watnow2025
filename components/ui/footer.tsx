@@ -7,24 +7,24 @@ import {
   HiHome, 
   HiOutlineGlobeAlt, 
   HiGlobeAlt, 
-  HiOutlinePlusCircle, 
-  HiPlusCircle, 
-  HiOutlineUser, 
-  HiUser 
+  HiOutlineCamera, 
+  HiCamera, 
+  HiOutlineUserCircle, 
+  HiUserCircle 
 } from "react-icons/hi";
 
 const navItems = [
   { href: '/timeline', name: 'Timeline', icon: HiOutlineHome, activeIcon: HiHome },
   { href: '/map', name: 'Map', icon: HiOutlineGlobeAlt, activeIcon: HiGlobeAlt },
-  { href: '/post', name: 'Post', icon: HiOutlinePlusCircle, activeIcon: HiPlusCircle },
-  { href: '/user', name: 'User', icon: HiOutlineUser, activeIcon: HiUser },
+  { href: '/post', name: 'Post', icon: HiOutlineCamera, activeIcon: HiCamera },
+  { href: '/user', name: 'User', icon: HiOutlineUserCircle, activeIcon: HiUserCircle },
 ];
 
 export default function Footer() {
   const pathname = usePathname();
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-10 bg-white/80 backdrop-blur-md border-t border-gray-200/50 shadow-lg">
+    <footer className="fixed bottom-0 left-0 right-0 z-10 bg-pink-100/90 backdrop-blur-md border-t border-pink-200/50 shadow-lg">
       <nav className="flex justify-around items-center h-16 px-4 relative">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
@@ -36,14 +36,14 @@ export default function Footer() {
                 <Icon 
                   className={`text-3xl transition-all duration-300 ${
                     isActive 
-                      ? 'text-pink-400 drop-shadow-sm' 
-                      : 'text-gray-500 group-hover:text-gray-700'
+                      ? 'text-gray-800 drop-shadow-sm' 
+                      : 'text-gray-500 group-hover:text-gray-600'
                   }`} 
                 />
               </div>
               {/* アクティブ時の下線をfooterの一番下に配置 */}
               {isActive && (
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-pink-400 rounded-t-full"></div>
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gray-800 rounded-t-full"></div>
               )}
             </Link>
           );
