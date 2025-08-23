@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import MapWithPins from '../components/MapWithPins';
+import MapWithPins from '../../components/features/map/MapWithPins';
 
 interface Location {
   latitude: number;
