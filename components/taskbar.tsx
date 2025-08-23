@@ -8,12 +8,27 @@ const Taskbar: React.FC = () => {
       <ul>
         <li>
           <Link href="/">
-            <span>home-2-svgrepo-com.svg</span>
+            <span className={styles.home}>
+              <img
+                src="/assets/icons/home-2-svgrepo-com.svg"
+                alt="Home"
+                width={32}
+                height={32}
+              />
+            </span>
           </Link>
         </li>
         <li>
           <Link href="/map">
-            <span>マップ</span>
+            <span>
+              <img
+                src="/assets/icons/earth-9-svgrepo-com.svg"
+                alt="Map"
+                width={32}
+                height={32}
+              />
+              マップ
+            </span>
           </Link>
         </li>
         <li>
