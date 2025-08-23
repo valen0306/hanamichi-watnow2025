@@ -24,6 +24,7 @@ export default function UserMapPage() {
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [supabaseError, setSupabaseError] = useState<string>('');
   const [isAccordionOpen, setIsAccordionOpen] = useState(false);
+  const [cityName, setCityName] = useState<string>('');
 
   // 現在地を取得
   useEffect(() => {
@@ -49,6 +50,9 @@ export default function UserMapPage() {
           accuracy: position.coords.accuracy,
           timestamp: new Date().toISOString()
         });
+        
+        // 市名を取得
+        fetchCityName(newLocation.latitude, newLocation.longitude);
         
         // 位置情報が取得できたら近い投稿を検索
         if (newLocation) {
@@ -312,6 +316,26 @@ export default function UserMapPage() {
     return distanceM;
   };
 
+  // 市名を取得
+  const fetchCityName = async (latitude: number, longitude: number) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`
+      );
+      const data = await response.json();
+      
+      if (data.address) {
+        // 日本の住所の場合、市名を取得
+        const city = data.address.city || data.address.town || data.address.village || data.address.county || '不明';
+        setCityName(city);
+        console.log('🏙️ 市名を取得しました:', city);
+      }
+    } catch (error) {
+      console.error('市名取得エラー:', error);
+      setCityName('不明');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -358,7 +382,7 @@ export default function UserMapPage() {
             {/* 投稿リスト - 下側からスライドアコーディオン */}
             <div className={`fixed bottom-0 right-0 w-full bg-white shadow-lg transition-transform duration-300 ease-in-out ${
               isAccordionOpen ? 'translate-y-0' : 'translate-y-full'
-            }`} style={{ height: '80vh' }}>
+            }`} style={{ height: '80vh', backgroundColor: '#FEF4F4' }}>
               {/* アコーディオントグルボタン */}
               <button
                 onClick={() => setIsAccordionOpen(!isAccordionOpen)}
@@ -371,15 +395,21 @@ export default function UserMapPage() {
               
               {/* 投稿リストの内容 */}
               <div className="h-full flex flex-col">
-                <div className="p-4 border-b border-gray-200 bg-gray-50">
-                  <h3 className="text-lg font-semibold text-gray-800">近くの投稿</h3>
-                  <p className="text-sm text-gray-600 mt-1">{nearbyPosts.length}件の投稿</p>
+                <div className="p-4 border-b border-gray-200" style={{ backgroundColor: '#FEF4F4' }}>
+                  <div className="flex items-center">
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      {cityName ? `${cityName}の投稿` : '近くの投稿'}
+                    </h3>
+                    <span className="text-xs text-gray-500 ml-2">
+                      {nearbyPosts.length}件
+                    </span>
+                  </div>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-y-auto p-4" style={{ backgroundColor: '#FEF4F4' }}>
                   <div className="space-y-3">
                     {nearbyPosts.map((post) => (
-                      <div key={post.post_id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                      <div key={post.post_id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors bg-white">
                         <div className="flex justify-between items-start mb-2">
                           <h4 className="text-sm font-semibold text-gray-800">
                             投稿 #{post.post_id}
