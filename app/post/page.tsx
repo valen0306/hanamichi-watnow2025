@@ -3,18 +3,27 @@
 import { uploadImageToPostImages, dataURLtoBlob, getPostImagePublicUrl } from "@/lib/strage";
 import { createPostWithCaptionAndUserId, savePostImageInfo } from "@/lib/post";
 import { useAuth } from "@/contexts/AuthContext";
-
-
+import { useRouter } from "next/navigation";
 import React, { useRef, useEffect, useState } from "react";
+
+// Camera components
+import PostHeader from "@/components/features/camera/header";
+import AddCommentBox from "@/components/features/camera/createcaptio";
+import ShareButton from "@/components/features/camera/postbutton";
+import ReClipButton from "@/components/features/camera/recripbotton";
+import ClipButton from "@/components/features/camera/cripbottun";
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
 
 const CameraPost: React.FC = () => {
   const { user } = useAuth();
+  const router = useRouter();
   const [uploadError, setUploadError] = useState<string>("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [comment, setComment] = useState<string>("");
   const [isPosted, setIsPosted] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [location, setLocation] = useState<{lat: number; lng: number} | null>(null);
   const [locationError, setLocationError] = useState<string>("");
 
@@ -73,12 +82,17 @@ const CameraPost: React.FC = () => {
 
   const handlePost = () => {
     console.log("handlePost called");
+    setIsLoading(true); // ローディング開始
+    
     // 投稿処理（API連携など）
     const upload = async () => {
       console.log("Uploading photo...");
       try {
          console.log("Photo data:", photo);
-        if (!photo) return;
+        if (!photo) {
+          setIsLoading(false);
+          return;
+        }
         const blob = dataURLtoBlob(photo);
         const fileName = `post_${Date.now()}.png`;
         console.log("Uploading to Supabase with filename:", fileName);
@@ -95,24 +109,28 @@ const CameraPost: React.FC = () => {
             // 2. 画像情報保存
             const success = await savePostImageInfo(url, location.lat, location.lng, post.id);
             if (success) {
-              alert("投稿と画像情報の保存に成功しました");
+              console.log("投稿と画像情報の保存に成功しました");
+              // 投稿完了後、ローディングは自動的に終了してタイムラインに遷移
             } else {
               setUploadError("画像情報の保存に失敗しました");
+              setIsLoading(false);
             }
           } else {
             setUploadError("投稿データの保存に失敗しました");
+            setIsLoading(false);
           }
-          alert("画像アップロード成功: " + url);
           console.log("画像アップロード成功:", url);
           setUploadError("");
         } else {
           setUploadError("アップロード失敗: Supabaseストレージへの保存に失敗しました");
           console.error("画像アップロード失敗: Supabaseストレージへの保存に失敗しました");
+          setIsLoading(false);
         }
         setIsPosted(true);
       } catch (err) {
         setUploadError("アップロード失敗: " + (err instanceof Error ? err.message : String(err)));
         console.error("画像アップロード失敗", err);
+        setIsLoading(false);
       }
     };
     upload();
@@ -145,62 +163,98 @@ const CameraPost: React.FC = () => {
   }, [isPosted]);
 
   return (
-    <div>
+    <>
+      {/* ローディング画面 */}
+      <LoadingScreen 
+        isVisible={isLoading} 
+        onComplete={() => {
+          setIsLoading(false);
+          router.push("/timeline");
+        }}
+        minDuration={2000} // 2秒間は最低表示
+      />
+      
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <PostHeader />
+      
       {!photo && (
-        <div>
-          <video ref={videoRef} autoPlay playsInline style={{ width: "100%" }} />
-          <button onClick={takePhoto}>撮影</button>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+          <div className="w-full max-w-md">
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              playsInline 
+              className="w-full rounded-lg shadow-lg mb-6" 
+            />
+            <div className="flex justify-center">
+              <ClipButton onClick={takePhoto} />
+            </div>
+          </div>
         </div>
       )}
+      
       <canvas ref={canvasRef} style={{ display: "none" }} />
+      
       {photo && !isPosted && (
-        <div style={{ position: "relative" }}>
-          <h3 className="text-red-500">撮影した写真</h3>
-          <div style={{ position: "relative", width: "100%" }}>
-            <img src={photo} alt="撮影画像" style={{ width: "100%" }} />
-            {/* 位置情報を写真下部中央に表示 */}
-            {(location || locationError) && (
-              <div style={{
-                position: "absolute",
-                bottom: 10,
-                left: "50%",
-                transform: "translateX(-50%)",
-                background: "rgba(0,0,0,0.6)",
-                color: "#fff",
-                padding: "4px 12px",
-                borderRadius: "8px",
-                fontSize: "0.95em"
-              }}>
-                {location
-                  ? `位置情報: 緯度 ${location.lat.toFixed(6)}, 経度 ${location.lng.toFixed(6)}`
-                  : locationError}
+        <div className="flex flex-col items-center px-4 pb-20">
+          <div className="w-full max-w-md">
+            {/* 撮影した写真 */}
+            <div className="relative mb-6">
+              <img 
+                src={photo} 
+                alt="撮影画像" 
+                className="w-full rounded-lg shadow-lg" 
+              />
+              {/* 位置情報を写真下部中央に表示 */}
+              {(location || locationError) && (
+                <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 bg-black/60 text-white px-3 py-2 rounded-lg text-sm">
+                  {location
+                    ? `位置情報: 緯度 ${location.lat.toFixed(6)}, 経度 ${location.lng.toFixed(6)}`
+                    : locationError}
+                </div>
+              )}
+            </div>
+            
+            {/* コメント入力 */}
+            <div className="mb-6">
+              <AddCommentBox 
+                value={comment}
+                onChange={setComment}
+                placeholder="コメントを入力してください"
+              />
+            </div>
+            
+            {/* ボタン群 */}
+            <div className="flex flex-col gap-4 items-center">
+              <ShareButton 
+                onClick={handlePost} 
+                disabled={isLoading} 
+              />
+              <ReClipButton onClick={() => window.location.reload()} />
+            </div>
+            
+            {/* エラーメッセージ */}
+            {uploadError && (
+              <div className="text-red-500 text-center mt-4 p-3 bg-red-50 rounded-lg">
+                {uploadError}
               </div>
             )}
           </div>
-          <div>
-            <textarea
-              className=""
-              value={comment}
-              onChange={e => setComment(e.target.value)}
-              placeholder="コメントを入力してください"
-              style={{ width: "100%", marginTop: 8 }}
-            />
-          </div>
-          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <button onClick={handlePost} disabled={!comment}>投稿</button>
-            <button onClick={() => window.location.reload()}>再撮影</button>
-          </div>
-          {uploadError && (
-            <div style={{ color: "red", marginTop: 12, textAlign: "center" }}>{uploadError}</div>
-          )}
         </div>
       )}
+      
       {isPosted && (
-        <div>
-          <p>投稿が完了しました！</p>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+          <div className="text-center">
+            <div className="text-green-500 text-6xl mb-4">✓</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">投稿完了！</h2>
+            <p className="text-gray-600">写真の投稿が正常に完了しました</p>
+          </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
