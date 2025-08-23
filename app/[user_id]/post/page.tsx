@@ -1,11 +1,14 @@
 "use client";
 
-import { uploadImageToPostImages, dataURLtoBlob } from "@/lib/strage";
+import { uploadImageToPostImages, dataURLtoBlob, getPostImagePublicUrl } from "@/lib/strage";
+import { createPostWithCaptionAndUserId, savePostImageInfo } from "@/lib/post";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 import React, { useRef, useEffect, useState } from "react";
 
 const CameraPost: React.FC = () => {
+  const { user } = useAuth();
   const [uploadError, setUploadError] = useState<string>("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -82,7 +85,23 @@ const CameraPost: React.FC = () => {
         const url = await uploadImageToPostImages(blob, fileName);
           console.log("Upload result URL:", url);
         if (url) {
-          // ここでurlをDB保存などに利用可能
+          // 投稿データ保存
+          if (!user?.id) {
+            setUploadError("ユーザーIDが取得できませんでした。ログインしてください。");
+            return;
+          }
+          const post = await createPostWithCaptionAndUserId(comment, user.id);
+          if (post && location) {
+            // 2. 画像情報保存
+            const success = await savePostImageInfo(url, location.lat, location.lng, post.id);
+            if (success) {
+              alert("投稿と画像情報の保存に成功しました");
+            } else {
+              setUploadError("画像情報の保存に失敗しました");
+            }
+          } else {
+            setUploadError("投稿データの保存に失敗しました");
+          }
           alert("画像アップロード成功: " + url);
           console.log("画像アップロード成功:", url);
           setUploadError("");
