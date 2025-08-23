@@ -14,7 +14,7 @@ interface PostImage {
 
 interface PhotoGridProps {
   images: PostImage[]
-  onImageClick?: (image: PostImage) => void
+  onImageClick?: (image: PostImage, postId: string) => void
   className?: string
 }
 
@@ -30,6 +30,13 @@ export function PhotoGrid({ images, onImageClick, className = '' }: PhotoGridPro
     )
   }
 
+  const handleImageClick = (image: PostImage) => {
+    // post_idを取得して、onImageClickコールバックに渡す
+    if (onImageClick) {
+      onImageClick(image, image.post_id)
+    }
+  }
+
   return (
     <div className={`${className}`}>
       {/* インスタグラム風の3列グリッド */}
@@ -38,7 +45,7 @@ export function PhotoGrid({ images, onImageClick, className = '' }: PhotoGridPro
           <div
             key={image.id}
             className="aspect-square bg-gray-300 relative overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-            onClick={() => onImageClick?.(image)}
+            onClick={() => handleImageClick(image)}
           >
             {/* 画像がある場合は表示、ない場合はグレーの四角 */}
             {image.image_url ? (

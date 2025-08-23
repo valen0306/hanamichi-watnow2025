@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { PhotoGrid } from './PhotoGrid'
 import { getRecentPostImages } from '@/lib/post'
 
@@ -25,6 +26,7 @@ export function Timeline({ className = '' }: TimelineProps) {
   const [hasMore, setHasMore] = useState(true)
   const [page, setPage] = useState(1)
   const [limit] = useState(30) // より多くの画像を表示
+  const router = useRouter()
 
   // 初期データの読み込み
   useEffect(() => {
@@ -75,9 +77,13 @@ export function Timeline({ className = '' }: TimelineProps) {
   }
 
   // 画像クリック時の処理
-  const handleImageClick = (image: PostImage) => {
+  const handleImageClick = (image: PostImage, postId: string) => {
     console.log('Image clicked:', image)
-    // ここで画像の詳細表示やモーダル表示などの処理を追加
+    console.log('Post ID:', postId)
+    
+    // post/[postId]ページにナビゲート
+    // 友人が実装するpost/[postId]ページの準備完了
+    router.push(`/post/${postId}`)
   }
 
   // エラー表示
@@ -92,7 +98,7 @@ export function Timeline({ className = '' }: TimelineProps) {
         <p className="text-gray-600 mb-4">{error}</p>
         <button
           onClick={loadImages}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           再試行
         </button>
