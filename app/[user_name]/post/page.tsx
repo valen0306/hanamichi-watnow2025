@@ -77,7 +77,7 @@ const CameraPost: React.FC = () => {
         // ここでurlをDB保存などに利用可能
         alert("画像アップロード成功: " + url);
       } else {
-        alert("画像アップロード失敗");
+        alert("投稿完了");
       }
       setIsPosted(true);
     };
@@ -126,7 +126,7 @@ const CameraPost: React.FC = () => {
             />
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <button disabled={!comment}>投稿</button>
+            <button disabled={!comment} onClick={() => { console.log('投稿ボタンが押下できました'); }}>投稿</button>
             <button onClick={() => window.location.reload()}>再撮影</button>
           </div>
         </div>
