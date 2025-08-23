@@ -67,10 +67,12 @@ export default function UserMapPage() {
       (error) => {
         let errorMessage = '位置情報の取得に失敗しました';
         let isDevelopmentError = false;
+        let isPermissionDenied = false;
         
         switch (error.code) {
           case error.PERMISSION_DENIED:
             errorMessage = '位置情報の権限が拒否されました';
+            isPermissionDenied = true;
             break;
           case error.POSITION_UNAVAILABLE:
             errorMessage = '位置情報が利用できません';
@@ -90,6 +92,8 @@ export default function UserMapPage() {
         
         if (isDevelopmentError) {
           setError(`${errorMessage}\n\n開発環境（localhost）では位置情報が取得できません。\n本番環境（HTTPS）では正常に動作します。`);
+        } else if (isPermissionDenied) {
+          setError(`${errorMessage}\n\n位置情報の使用を許可してください。\n\n設定方法:\n1. ブラウザの設定を開く\n2. プライバシーとセキュリティ → サイトの設定\n3. 位置情報を許可に設定\n\nまたは、テスト用の位置情報を使用することもできます。`);
         } else {
           setError(errorMessage);
         }
@@ -689,16 +693,21 @@ export default function UserMapPage() {
   if (error) {
     // 開発環境での位置情報制限エラーの場合
     const isDevelopmentError = error.includes('HTTPS環境が必要');
+    const isPermissionDenied = error.includes('権限が拒否されました');
     
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className={`border rounded-lg px-6 py-4 max-w-2xl ${
           isDevelopmentError 
             ? 'bg-blue-100 border-blue-400 text-blue-700' 
+            : isPermissionDenied
+            ? 'bg-orange-100 border-orange-400 text-orange-700'
             : 'bg-red-100 border-red-400 text-red-700'
         }`}>
           <h2 className="text-lg font-bold mb-2">
-            {isDevelopmentError ? '位置情報の制限について' : 'エラーが発生しました'}
+            {isDevelopmentError ? '位置情報の制限について' : 
+             isPermissionDenied ? '位置情報の権限について' : 
+             'エラーが発生しました'}
           </h2>
           
           {isDevelopmentError ? (
@@ -716,14 +725,26 @@ export default function UserMapPage() {
                   <li>• このエラーはアプリケーションの動作に影響しません</li>
                 </ul>
               </div>
+            </div>
+          ) : isPermissionDenied ? (
+            <div className="space-y-3">
+              <p className="text-sm">
+                ブラウザで位置情報の使用が拒否されています。権限を許可するか、テスト用の位置情報を使用してください。
+              </p>
+              
+              <div className="p-3 bg-orange-50 rounded border border-orange-200">
+                <h3 className="font-semibold mb-2">権限の許可方法:</h3>
+                <ul className="text-sm space-y-1">
+                  <li>• ブラウザの設定を開く</li>
+                  <li>• プライバシーとセキュリティ → サイトの設定</li>
+                  <li>• 位置情報を許可に設定</li>
+                  <li>• ページを再読み込み</li>
+                </ul>
+              </div>
               
               <div className="p-3 bg-yellow-50 rounded border border-yellow-200">
-                <h3 className="font-semibold mb-2">開発時の対処法:</h3>
-                <ul className="text-sm space-y-1">
-                  <li>• テスト用の位置情報を手動で設定する</li>
-                  <li>• 本番環境でテストする</li>
-                  <li>• 位置情報なしでアプリケーションの動作を確認する</li>
-                </ul>
+                <h3 className="font-semibold mb-2">代替案:</h3>
+                <p className="text-sm">テスト用の位置情報を使用してアプリケーションの動作を確認できます。</p>
               </div>
             </div>
           ) : (
@@ -736,13 +757,15 @@ export default function UserMapPage() {
               className={`px-4 py-2 rounded text-white transition-colors ${
                 isDevelopmentError 
                   ? 'bg-blue-600 hover:bg-blue-700' 
+                  : isPermissionDenied
+                  ? 'bg-orange-600 hover:bg-orange-700'
                   : 'bg-red-600 hover:bg-red-700'
               }`}
             >
               ページを再読み込み
             </button>
             
-            {isDevelopmentError && (
+            {(isDevelopmentError || isPermissionDenied) && (
               <button 
                 onClick={() => {
                   // テスト用の位置情報を設定（東京駅周辺）

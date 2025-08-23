@@ -18,25 +18,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Hanamichi WatNow 2025',
   description: '花道の今を共有するアプリ',
-  manifest: '/manifest.json',
-  themeColor: '#000000',
   viewport:
     'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'WatNow',
-  },
-  formatDetection: {
-    telephone: false,
-  },
-  icons: {
-    icon: [
-      { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icon-512x512.png', sizes: '512x512', type: 'image/png' },
-    ],
-    apple: [{ url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' }],
-  },
 };
 
 export default function RootLayout({
@@ -63,11 +46,6 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="WatNow" />
-        <link rel="apple-touch-icon" href="/icon-192x192.png" />
         
         {/* Google Maps API - 環境変数が正しく設定されている場合のみ読み込み */}
         {shouldLoadGoogleMaps ? (
