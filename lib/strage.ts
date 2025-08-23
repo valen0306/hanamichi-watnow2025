@@ -32,22 +32,51 @@ import { createClient } from "./supabase";
  * @param fileName 保存するファイル名（例: `${userId}_${Date.now()}.png`）
  */
 export async function uploadImageToPostImages(file: Blob | File | Uint8Array, fileName: string): Promise<string | null> {
-  const supabase = createClient();
-  const bucket = "post_images";
+  console.log("uploadImageToPostImages called with fileName:", fileName);
+  try {
+    console.log("[LOG] uploadImageToPostImages: tryブロック開始");
+    const supabase = createClient();
+    const bucket = "post_images";
+    console.log("Uploading to bucket:", bucket);
 
-  // 画像アップロード
-  const { error } = await supabase.storage.from(bucket).upload(fileName, file, {
-    cacheControl: "3600",
-    upsert: true,
-    contentType: "image/png",
-  });
+    // 画像アップロード
+    const { data: uploadData, error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file, {
+      cacheControl: "3600",
+      upsert: true,
+      contentType: "image/png",
+    });
+    console.log("[LOG] uploadImageToPostImages: upload APIレスポンス", { uploadData, uploadError });
 
-  if (error) {
-    console.error("画像アップロード失敗:", error.message);
+    if (uploadError) {
+      console.error("画像アップロード失敗 (uploadError):", JSON.stringify(uploadError, null, 2));
+      alert(`画像アップロード失敗: ${uploadError.message}\n詳細: ${JSON.stringify(uploadError, null, 2)}`);
+      return null;
+    }
+    if (!uploadData) {
+      console.error("画像アップロード失敗: uploadDataがnullです");
+      alert("画像アップロード失敗: uploadDataがnullです");
+      return null;
+    }
+
+    // 公開URL取得
+    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(fileName);
+    console.log("[LOG] uploadImageToPostImages: getPublicUrl APIレスポンス", { urlData });
+    if (!urlData || !urlData.publicUrl) {
+      console.error("公開URL取得失敗: urlDataがnullです", JSON.stringify(urlData, null, 2));
+      alert("公開URL取得失敗: urlDataがnullです\n詳細: " + JSON.stringify(urlData, null, 2));
+      return null;
+    }
+    console.log("[LOG] uploadImageToPostImages: 正常終了 publicUrl=", urlData.publicUrl);
+    return urlData.publicUrl;
+  } catch (err) {
+    console.log("[LOG] uploadImageToPostImages: catchブロック到達");
+    if (err instanceof Error) {
+      console.error("画像アップロード例外 (Error):", err.name, err.message, err.stack);
+      alert(`画像アップロード例外: ${err.name}\n${err.message}`);
+    } else {
+      console.error("画像アップロード例外 (unknown):", JSON.stringify(err, null, 2));
+      alert("画像アップロード例外: " + JSON.stringify(err, null, 2));
+    }
     return null;
   }
-
-  // 公開URL取得
-  const { data } = supabase.storage.from(bucket).getPublicUrl(fileName);
-  return data?.publicUrl ?? null;
 }

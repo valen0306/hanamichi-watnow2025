@@ -68,20 +68,32 @@ const CameraPost: React.FC = () => {
   };
 
   const handlePost = () => {
+    console.log("handlePost called");
     // 投稿処理（API連携など）
     const upload = async () => {
-      if (!photo) return;
-      const blob = dataURLtoBlob(photo);
-      const fileName = `post_${Date.now()}.png`;
-      const url = await uploadImageToPostImages(blob, fileName);
-      if (url) {
-        // ここでurlをDB保存などに利用可能
-        alert("画像アップロード成功: " + url);
-        setUploadError("");
-      } else {
-        setUploadError("アップロード失敗");
+      console.log("Uploading photo...");
+      try {
+         console.log("Photo data:", photo);
+        if (!photo) return;
+        const blob = dataURLtoBlob(photo);
+        const fileName = `post_${Date.now()}.png`;
+        console.log("Uploading to Supabase with filename:", fileName);
+        const url = await uploadImageToPostImages(blob, fileName);
+          console.log("Upload result URL:", url);
+        if (url) {
+          // ここでurlをDB保存などに利用可能
+          alert("画像アップロード成功: " + url);
+          console.log("画像アップロード成功:", url);
+          setUploadError("");
+        } else {
+          setUploadError("アップロード失敗: Supabaseストレージへの保存に失敗しました");
+          console.error("画像アップロード失敗: Supabaseストレージへの保存に失敗しました");
+        }
+        setIsPosted(true);
+      } catch (err) {
+        setUploadError("アップロード失敗: " + (err instanceof Error ? err.message : String(err)));
+        console.error("画像アップロード失敗", err);
       }
-      setIsPosted(true);
     };
     upload();
   };
@@ -128,7 +140,7 @@ const CameraPost: React.FC = () => {
             />
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <button disabled={!comment} onClick={() => { console.log('投稿ボタンが押下できました'); }}>投稿</button>
+            <button onClick={handlePost} disabled={!comment}>投稿</button>
             <button onClick={() => window.location.reload()}>再撮影</button>
           </div>
           {uploadError && (
