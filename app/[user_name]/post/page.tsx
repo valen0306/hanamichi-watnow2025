@@ -1,3 +1,4 @@
+import { uploadImageToPostImages, dataURLtoBlob } from "@/lib/strage";
 "use client";
 
 
@@ -66,8 +67,20 @@ const CameraPost: React.FC = () => {
 
   const handlePost = () => {
     // 投稿処理（API連携など）
-    setIsPosted(true);
-    alert("投稿が完了しました！");
+    const upload = async () => {
+      if (!photo) return;
+      const blob = dataURLtoBlob(photo);
+      const fileName = `post_${Date.now()}.png`;
+      const url = await uploadImageToPostImages(blob, fileName);
+      if (url) {
+        // ここでurlをDB保存などに利用可能
+        alert("画像アップロード成功: " + url);
+      } else {
+        alert("画像アップロード失敗");
+      }
+      setIsPosted(true);
+    };
+    upload();
   };
 
   return (
