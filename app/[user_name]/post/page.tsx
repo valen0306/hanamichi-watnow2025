@@ -126,7 +126,7 @@ const CameraPost: React.FC = () => {
             />
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <button onClick={handlePost}>投稿</button>
+            <button disabled={!comment}>投稿</button>
             <button onClick={() => window.location.reload()}>再撮影</button>
           </div>
         </div>
