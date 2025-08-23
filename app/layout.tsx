@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
+import Navigation from '@/components/Navigation';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -49,11 +50,20 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="WatNow" />
+        <link rel="apple-touch-icon" href="/icon-192x192.png" />
+        
+        {/* Google Maps API - 一度だけ読み込み */}
+        <script
+          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+          async
+          defer
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
+          <Navigation />
           {children}
         </AuthProvider>
       </body>

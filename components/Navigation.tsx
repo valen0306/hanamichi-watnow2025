@@ -4,11 +4,32 @@ import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
 export default function Navigation() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, loading } = useAuth();
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Sign out failed:', error);
+    }
   };
+
+  if (loading) {
+    return (
+      <nav className="bg-white shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <div className="text-xl font-bold text-gray-900">WatNow</div>
+            </div>
+            <div className="flex items-center">
+              <div className="text-gray-500">読み込み中...</div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="bg-white shadow-lg">

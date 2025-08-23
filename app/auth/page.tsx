@@ -1,76 +1,100 @@
 'use client';
 
-import { useState } from 'react';
-import { createClient } from '@/lib/supabase';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { createUser } from '@/lib/user';
-import { createPost } from '@/lib/post';
 
-
-
-export default function LoginPage() {
+export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  
+  const { user, signIn, signUp, loading: authLoading } = useAuth();
   const router = useRouter();
-  const supabase = createClient();
-  const [notification, setNotification] = useState<string | null>(null);
 
-  const handleAuth = async (e: React.FormEvent) => {
+  // ログイン状態を確認
+  useEffect(() => {
+    if (user && !authLoading) {
+      console.log('User is already logged in, redirecting to home...');
+      router.push('/');
+    }
+  }, [user, authLoading, router]);
+
+  // 認証中は何も表示しない
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-gray-500">認証状態を確認中...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // 既にログインしている場合は何も表示しない
+  if (user) {
+    return null;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setMessage(null);
 
     try {
-      if (isSignUp && username.trim().length === 0) {
-        throw new Error('ユーザー名を入力してください');
-      }
+      let result;
+      
       if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
-          },
-        });
-        if (error) throw error;
-
-        // メール確認が不要な場合、直接ログイン状態にする
-        if (data.user && !data.session) {
-          // メール確認が必要な場合
-          setNotification(
-            '確認メールを送信しました。メールを確認してください。'
-          );
-        } else if (data.session && data.user) {
-          // メール確認が不要で直接ログインできた場合
-          // ユーザー情報を作成
-          const userData = {
-            id: data.user.id,
-            email: data.user.email!,
-            username: username.trim() || data.user.email?.split('@')[0],
-            full_name: '',
-            avatar_url: '',
-          };
-
-          await createUser(userData);
-          router.push('/');
+        // サインアップ時のバリデーション
+        if (!username.trim()) {
+          setError('ユーザー名を入力してください');
+          setLoading(false);
+          return;
+        }
+        
+        result = await signUp(email, password, username.trim());
+        if (!result.error) {
+          setMessage('アカウントが作成されました！自動的にログインされます。');
+          // サインアップ成功後、少し待ってからホームページにリダイレクト
+          setTimeout(() => {
+            router.push('/');
+          }, 2000);
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        router.push('/');
+        result = await signIn(email, password);
+        if (!result.error) {
+          // ログイン成功後、ホームページにリダイレクト
+          router.push('/');
+          return;
+        }
+      }
+
+      if (result.error) {
+        setError(result.error);
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred');
+      console.error('Auth process error:', error);
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('予期しないエラーが発生しました');
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleMode = () => {
+    setIsSignUp(!isSignUp);
+    setError(null);
+    setMessage(null);
+    setUsername('');
   };
 
   return (
@@ -81,7 +105,8 @@ export default function LoginPage() {
             {isSignUp ? 'アカウント作成' : 'ログイン'}
           </h2>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleAuth}>
+        
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="email" className="sr-only">
@@ -93,7 +118,9 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm ${
+                  isSignUp ? 'rounded-t-md' : 'rounded-t-md rounded-b-md'
+                }`}
                 placeholder="メールアドレス"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -127,7 +154,9 @@ export default function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm ${
+                  isSignUp ? 'rounded-b-md' : 'rounded-t-md rounded-b-md'
+                }`}
                 placeholder="パスワード"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -136,28 +165,42 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="text-red-600 text-sm text-center">{error}</div>
+            <div className="text-red-600 text-sm text-center">
+              {error}
+            </div>
+          )}
+
+          {message && (
+            <div className="text-green-600 text-sm text-center">
+              {message}
+            </div>
           )}
 
           <div>
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
+                loading
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+              }`}
             >
-              {loading ? '処理中...' : isSignUp ? 'アカウント作成' : 'ログイン'}
+              {loading ? (
+                '処理中...'
+              ) : (
+                isSignUp ? 'アカウント作成' : 'ログイン'
+              )}
             </button>
           </div>
 
           <div className="text-center">
             <button
               type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={toggleMode}
               className="text-indigo-600 hover:text-indigo-500 text-sm"
             >
-              {isSignUp
-                ? '既にアカウントをお持ちですか？ログイン'
-                : 'アカウントをお持ちでない方はこちら'}
+              {isSignUp ? '既にアカウントをお持ちですか？ログイン' : 'アカウントをお持ちでないですか？作成'}
             </button>
           </div>
         </form>
