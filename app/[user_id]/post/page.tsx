@@ -42,14 +42,15 @@ const CameraPost: React.FC = () => {
         // 位置情報取得
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-              setLocationError("");
+            (position) => {
+              setLocation({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              });
             },
-            (err) => {
-              setLocationError("位置情報の取得に失敗しました");
-            },
-            { enableHighAccuracy: true }
+            () => {
+              setLocationError('位置情報の取得に失敗しました');
+            }
           );
         } else {
           setLocationError("このデバイスは位置情報取得に対応していません");

@@ -87,7 +87,7 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
         markers.forEach(marker => marker.setMap(null));
       }
     };
-  }, [userLocation, mapLoaded]);
+  }, [userLocation, mapLoaded, markers]);
 
   // 投稿のピンを表示
   useEffect(() => {
@@ -117,7 +117,7 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
     newMarkers.push(userMarker);
 
     // 投稿のピンを表示
-    nearbyPosts.forEach((post, index) => {
+    nearbyPosts.forEach((post) => {
       const marker = new window.google.maps.Marker({
         position: { lat: post.latitude, lng: post.longitude },
         map: mapInstance,
@@ -182,7 +182,7 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
       });
     }
 
-  }, [mapInstance, nearbyPosts, userLocation]);
+  }, [mapInstance, nearbyPosts, userLocation, markers]);
 
   return (
     <div className="w-full">

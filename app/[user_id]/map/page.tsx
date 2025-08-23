@@ -351,7 +351,7 @@ export default function UserMapPage() {
               
               {/* 投稿リスト */}
               <div className="space-y-4">
-                {nearbyPosts.map((post, index) => (
+                {nearbyPosts.map((post) => (
                   <div key={post.post_id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="text-lg font-semibold text-gray-800">
