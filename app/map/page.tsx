@@ -1,0 +1,828 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import MapWithPins from '../components/MapWithPins';
+
+interface Location {
+  latitude: number;
+  longitude: number;
+}
+
+interface NearbyPost {
+  post_id: string;
+  user_id: string;
+  username?: string;
+  image_url?: string;
+  latitude: number;
+  longitude: number;
+  address?: string;
+  likes_count: number;
+  created_at: string;
+  distance: number;
+}
+
+export default function UserMapPage() {
+  const [location, setLocation] = useState<Location | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
+  const [nearbyPosts, setNearbyPosts] = useState<NearbyPost[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [supabaseError, setSupabaseError] = useState<string>('');
+  const [isAccordionOpen, setIsAccordionOpen] = useState(false);
+  const [cityName, setCityName] = useState<string>('');
+
+  // 現在地を取得
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setError('このブラウザは位置情報取得に対応していません');
+      setLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const newLocation = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        };
+        setLocation(newLocation);
+        setLoading(false);
+        
+        // 位置情報をコンソールに出力
+        console.log('📍 現在の位置情報を取得しました:', {
+          latitude: newLocation.latitude,
+          longitude: newLocation.longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: new Date().toISOString()
+        });
+        
+        // 市名を取得
+        fetchCityName(newLocation.latitude, newLocation.longitude);
+        
+        // 位置情報が取得できたら近い投稿を検索
+        if (newLocation) {
+          fetchNearbyPosts(newLocation);
+        }
+      },
+      (error) => {
+        let errorMessage = '位置情報の取得に失敗しました';
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = '位置情報の権限が拒否されました';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = '位置情報が利用できません';
+            break;
+          case error.TIMEOUT:
+            errorMessage = '位置情報の取得がタイムアウトしました';
+            break;
+        }
+        
+        console.error('❌ 位置情報取得エラー:', errorMessage, error);
+        setError(errorMessage);
+        setLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000
+      }
+    );
+  }, []);
+
+  // 現在地に近い投稿を取得
+  const fetchNearbyPosts = async (userLocation: Location) => {
+    setLoadingPosts(true);
+    setSupabaseError('');
+    
+    try {
+      // Supabaseからのデータ取得
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      
+      console.log('環境変数チェック:', { 
+        supabaseUrl: supabaseUrl ? '設定済み' : '未設定', 
+        supabaseKey: supabaseKey ? '設定済み' : '未設定' 
+      });
+      
+      if (!supabaseUrl || !supabaseKey) {
+        setSupabaseError('Supabaseの設定が不完全です。環境変数を確認してください。');
+        setLoadingPosts(false);
+        return;
+      }
+
+      // 動的にSupabaseクライアントを作成
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      console.log('Supabaseクライアント作成完了');
+
+      // まず、テーブルの存在確認
+      console.log('post_imagesテーブルの存在確認中...');
+      
+      // 基本的なデータ取得を試行
+      const { data: basicData, error: basicError } = await supabase
+        .from('post_images')
+        .select('*')
+        .limit(1);
+      
+      console.log('基本的なデータ取得結果:', { basicData, basicError });
+      
+      if (basicError) {
+        console.error('基本的なデータ取得エラー:', basicError);
+        
+        // エラーの詳細を分析
+        if (basicError.message.includes('does not exist')) {
+          setSupabaseError('post_imagesテーブルが存在しません。テーブル名を確認してください。');
+        } else if (basicError.message.includes('permission')) {
+          setSupabaseError('post_imagesテーブルへのアクセス権限がありません。');
+        } else if (basicError.message.includes('RLS')) {
+          setSupabaseError('Row Level Security (RLS)が有効で、アクセスが制限されています。');
+        } else {
+          setSupabaseError('テーブルアクセスエラー: ' + basicError.message);
+        }
+        
+        setLoadingPosts(false);
+        return;
+      }
+
+      // テーブルが存在するがデータがない場合
+      if (!basicData || basicData.length === 0) {
+        console.log('テーブルは存在しますが、データが0件です');
+        
+        // 他のテーブルの存在確認
+        console.log('利用可能なテーブルを確認中...');
+        
+        // 一般的なテーブル名を試行
+        const commonTableNames = ['posts', 'post', 'images', 'user_posts', 'user_images'];
+        
+        for (const tableName of commonTableNames) {
+          try {
+            const { data: testData, error: testError } = await supabase
+              .from(tableName)
+              .select('*')
+              .limit(1);
+            
+            console.log(`テーブル ${tableName} の確認結果:`, { 
+              exists: !testError, 
+              dataCount: testData?.length || 0,
+              error: testError?.message 
+            });
+            
+            if (!testError && testData && testData.length > 0) {
+              console.log(`テーブル ${tableName} にデータがあります！`);
+              console.log(`サンプルデータ:`, testData[0]);
+            }
+          } catch (err) {
+            console.log(`テーブル ${tableName} の確認中にエラー:`, err);
+          }
+        }
+        
+        setSupabaseError('post_imagesテーブルにデータが存在しません。データを挿入するか、正しいテーブル名を確認してください。');
+        setLoadingPosts(false);
+        return;
+      }
+
+        // post_imagesテーブルとpostsテーブルを結合して投稿データを取得
+        console.log('位置情報付きデータを取得中...');
+        
+        // まず、user_profilesテーブルの構造を確認
+        try {
+          const { data: profileStructure, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .limit(1);
+          
+          console.log('user_profilesテーブル構造:', profileStructure);
+          console.log('user_profilesエラー:', profileError);
+          
+          if (profileStructure && profileStructure.length > 0) {
+            console.log('user_profilesの利用可能なカラム:', Object.keys(profileStructure[0]));
+          }
+        } catch (err) {
+          console.log('user_profilesテーブル構造確認エラー:', err);
+        }
+        
+        const { data, error } = await supabase
+          .from('post_images')
+          .select(`
+            post_id,
+            image_url,
+            latitude,
+            longitude,
+            created_at,
+            posts!inner(
+              id,
+              user_id
+            )
+          `)
+          .not('latitude', 'is', null)
+          .not('longitude', 'is', null);
+        
+        console.log('Supabaseクエリ結果:', { data, error });
+        
+        if (data && data.length > 0) {
+          console.log('取得されたデータの詳細:');
+          data.forEach((item, index) => {
+            console.log(`データ${index}:`, {
+              post_id: item.post_id,
+              latitude: item.latitude,
+              longitude: item.longitude,
+              posts: item.posts
+            });
+          });
+        }
+        
+        console.log('位置情報付きデータ取得結果:', { data, error });
+        console.log('取得したデータ:', data); // デバッグ用
+        console.log('データ件数:', data?.length || 0);
+        
+        // データの型を確認
+        if (data && data.length > 0) {
+          console.log('最初のデータのposts型:', {
+            posts: data[0].posts,
+            posts_type: typeof data[0].posts,
+            posts_is_array: Array.isArray(data[0].posts),
+            posts_keys: data[0].posts ? Object.keys(data[0].posts) : null
+          });
+        }
+
+        // user_profilesテーブルからユーザー情報を取得
+        let userProfiles: any[] = [];
+        if (data && data.length > 0) {
+          const userIds = data.map(item => {
+            const postsData = item.posts as any;
+            return postsData?.user_id;
+          }).filter(Boolean);
+          console.log('取得するユーザーID:', userIds);
+          
+          if (userIds.length > 0) {
+            try {
+              console.log('user_profilesテーブルをクエリ中...');
+              console.log('クエリ対象のユーザーID:', userIds);
+              
+              // まず、user_profilesテーブルの存在確認
+              console.log('user_profilesテーブルの存在確認中...');
+              const { data: tableCheck, error: tableCheckError } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .limit(1);
+              
+              console.log('user_profilesテーブル存在確認:', { tableCheck, tableCheckError });
+              
+              if (tableCheckError) {
+                console.log('user_profilesテーブルにアクセスできません:', tableCheckError);
+                // エラーがあっても続行する（ログは残す）
+              }
+              
+              // テーブルにデータがあるか確認
+              if (tableCheck && tableCheck.length > 0) {
+                console.log('user_profilesテーブルにデータが存在します');
+                console.log('サンプルデータ:', tableCheck[0]);
+                console.log('利用可能なカラム:', Object.keys(tableCheck[0]));
+              } else {
+                console.log('user_profilesテーブルは存在しますが、データがありません');
+                
+                // 基本的なクエリを試行
+                console.log('基本的なuser_profilesクエリを試行中...');
+                try {
+                  const { data: basicQuery, error: basicError } = await supabase
+                    .from('user_profiles')
+                    .select('count');
+                  
+                  console.log('基本的なクエリ結果 - data:', basicQuery);
+                  console.log('基本的なクエリ結果 - error:', basicError);
+                  console.log('基本的なクエリ結果 - data_type:', typeof basicQuery);
+                  console.log('基本的なクエリ結果 - is_array:', Array.isArray(basicQuery));
+                  console.log('基本的なクエリ結果 - data_length:', basicQuery?.length || 0);
+                  
+                  // テーブル名を確認してみる（別の方法）
+                  console.log('利用可能なテーブルを確認中...');
+                  try {
+                    // 直接テーブルにアクセスしてみる
+                    const { data: testTable, error: testTableError } = await supabase
+                      .from('user_profiles')
+                      .select('*')
+                      .limit(1);
+                    
+                    console.log('user_profilesテーブル直接アクセステスト:', { 
+                      data: testTable, 
+                      error: testTableError,
+                      data_length: testTable?.length || 0
+                    });
+                  } catch (testTableErr) {
+                    console.log('user_profilesテーブル直接アクセステストでエラー:', testTableErr);
+                  }
+                  
+                  // user_profilesテーブルの基本的なアクセスを試行
+                  console.log('user_profilesテーブルの基本的なアクセスを試行中...');
+                  try {
+                    const { data: simpleQuery, error: simpleError } = await supabase
+                      .from('user_profiles')
+                      .select('*');
+                    
+                    console.log('シンプルクエリ結果 - data:', simpleQuery);
+                    console.log('シンプルクエリ結果 - error:', simpleError);
+                    console.log('シンプルクエリ結果 - data_length:', simpleQuery?.length || 0);
+                    console.log('シンプルクエリ結果 - data_type:', typeof simpleQuery);
+                    console.log('シンプルクエリ結果 - is_array:', Array.isArray(simpleQuery));
+                  } catch (simpleErr) {
+                    console.log('シンプルクエリでエラー:', simpleErr);
+                  }
+                  
+                } catch (basicErr) {
+                  console.log('基本的なクエリでエラー:', basicErr);
+                }
+              }
+              
+              // 特定のuser_idでクエリを試行
+              const testUserId = userIds[0];
+              console.log(`テスト用user_id ${testUserId} でクエリを試行中...`);
+              
+              const { data: testQuery, error: testError } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('id', testUserId);
+              
+              console.log('テストクエリ結果:', { testQuery, testError });
+              
+              if (testQuery && testQuery.length > 0) {
+                console.log('テストクエリでデータが見つかりました:', testQuery[0]);
+              } else {
+                console.log('テストクエリでデータが見つかりませんでした');
+                if (testError) {
+                  console.log('テストクエリエラー:', testError);
+                }
+              }
+              
+              // 実際のクエリを実行
+              const { data: profiles, error: userError } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .in('id', userIds);
+              
+              console.log('user_profiles取得結果:', { profiles, userError });
+              console.log('user_profilesの型:', typeof profiles);
+              console.log('user_profilesが配列か:', Array.isArray(profiles));
+              
+              if (profiles && profiles.length > 0) {
+                console.log('user_profilesの利用可能なカラム:', Object.keys(profiles[0]));
+                console.log('user_profilesの最初のデータ:', profiles[0]);
+                userProfiles = profiles;
+              } else {
+                console.log('user_profilesからデータが取得できませんでした');
+                console.log('profiles:', profiles);
+                console.log('userError:', userError);
+                
+                // エラーの詳細を確認
+                if (userError) {
+                  console.log('user_profilesクエリエラーの詳細:', {
+                    code: userError.code,
+                    message: userError.message,
+                    details: userError.details,
+                    hint: userError.hint
+                  });
+                }
+              }
+            } catch (err) {
+              console.log('user_profiles取得エラー:', err);
+            }
+          }
+        }
+
+      console.log('位置情報付きデータ取得結果:', { data, error });
+      console.log('取得したデータ:', data); // デバッグ用
+      console.log('データ件数:', data?.length || 0); // データ件数
+      console.log('現在地:', userLocation); // 現在地
+
+      if (error) {
+        console.error('投稿取得エラー:', error);
+        setSupabaseError('投稿データの取得に失敗しました: ' + error.message);
+        setLoadingPosts(false);
+        return;
+      }
+
+      // データが空の場合の詳細確認
+      if (!data || data.length === 0) {
+        console.log('データが空です。テーブル構造を確認中...');
+        
+        // テーブル構造を確認
+        const { data: tableInfo, error: tableError } = await supabase
+          .from('post_images')
+          .select('*');
+        
+        console.log('テーブル全体のデータ:', tableInfo);
+        console.log('テーブル構造確認エラー:', tableError);
+        
+        if (tableInfo && tableInfo.length > 0) {
+          console.log('テーブルにはデータがありますが、位置情報がnullの可能性があります');
+          console.log('サンプルデータ:', tableInfo[0]);
+        }
+        
+        setSupabaseError('位置情報付きの投稿データが見つかりません。データに緯度経度が設定されているか確認してください。');
+        setLoadingPosts(false);
+        return;
+      }
+
+      // userProfilesの取得状況を確認
+      console.log('データ処理前のuserProfiles状況:', {
+        userProfiles_length: userProfiles.length,
+        userProfiles_sample: userProfiles.slice(0, 2)
+      });
+      
+      // 距離を計算して近い順にソート
+      const postsWithDistance = await Promise.all((data || []).map(async (post) => {
+        const distance = calculateDistance(
+          userLocation.latitude,
+          userLocation.longitude,
+          post.latitude,
+          post.longitude
+        );
+        
+        // 結合されたデータからuser_idを抽出
+        const postsData = post.posts as any;
+        const user_id = postsData?.user_id || 'unknown';
+        
+        // userProfilesからusernameを取得
+        const userProfile = userProfiles.find(profile => profile.id === user_id);
+        const username = userProfile?.username || '匿名ユーザー';
+        
+        // 住所を取得
+        const address = await fetchAddress(post.latitude, post.longitude);
+        
+        console.log(`投稿 ${post.post_id}: 距離 ${distance.toFixed(0)}m, ユーザーID: ${user_id}, ユーザー名: ${username}, 住所: ${address}`); // 各投稿の距離とユーザー情報
+        console.log(`投稿 ${post.post_id} のpostsデータ:`, post.posts); // postsデータの詳細
+        console.log(`投稿 ${post.post_id} のuser_id抽出:`, {
+          posts_exists: !!post.posts,
+          posts_type: typeof post.posts,
+          posts_is_array: Array.isArray(post.posts),
+          user_id_from_post: postsData?.user_id
+        });
+        
+        // username検索の詳細ログ
+        console.log(`投稿 ${post.post_id} のusername検索:`, {
+          user_id: user_id,
+          userProfiles_length: userProfiles.length,
+          userProfiles_sample: userProfiles.slice(0, 2), // 最初の2件をサンプル表示
+          found_profile: userProfile,
+          username_result: username
+        });
+        
+                return {
+          post_id: post.post_id,
+          user_id: user_id,
+          username: username,
+          image_url: post.image_url,
+          latitude: post.latitude,
+          longitude: post.longitude,
+          address: address,
+          likes_count: 5, // テストデータとして5件のいいね数を設定
+          created_at: post.created_at,
+          distance
+        };
+      }));
+
+      // 100km以内の投稿をフィルタリング
+      const filteredPosts = postsWithDistance.filter(post => {
+        const isWithinRange = post.distance <= 100000; // 100km以内
+        console.log(`投稿 ${post.post_id}: 100km以内 ${isWithinRange ? '○' : '×'}`); // 範囲内かチェック
+        return isWithinRange;
+      });
+
+      // 距離順にソートして上位10件を取得
+      const sortedPosts = filteredPosts
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 10); // 上位10件
+
+      console.log('フィルター後の投稿:', sortedPosts); // フィルター後の結果
+      console.log('最終表示件数:', sortedPosts.length); // 最終表示件数
+
+      setNearbyPosts(sortedPosts);
+
+      /*
+      // テストデータを使用（コメントアウト）
+      console.log('🧪 テストモード: Supabaseからのデータ取得をスキップし、テストデータを使用します');
+      
+      // 現在地を中心としたテストデータを生成
+      const testPosts = [
+        {
+          post_id: 'test_001',
+          latitude: userLocation.latitude + 0.001, // 約100m北
+          longitude: userLocation.longitude + 0.001, // 約100m東
+          created_at: new Date().toISOString()
+        },
+        {
+          post_id: 'test_002',
+          latitude: userLocation.latitude - 0.002, // 約200m南
+          longitude: userLocation.longitude - 0.001, // 約100m西
+          created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // 1日前
+        },
+        {
+          post_id: 'test_003',
+          latitude: userLocation.latitude + 0.003, // 約300m北
+          longitude: userLocation.longitude - 0.002, // 約200m西
+          created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2日前
+        },
+        {
+          post_id: 'test_004',
+          latitude: userLocation.latitude - 0.001, // 約100m南
+          longitude: userLocation.longitude + 0.003, // 約300m東
+          created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3日前
+        },
+        {
+          post_id: 'test_005',
+          latitude: userLocation.latitude + 0.002, // 約200m北
+          longitude: userLocation.longitude + 0.002, // 約200m東
+          created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() // 4日前
+        }
+      ];
+
+      console.log('📊 生成されたテストデータ:', testPosts);
+      console.log('📍 現在地を中心としたテスト投稿を生成しました（100m〜300mの範囲）');
+
+      // 距離を計算して近い順にソート
+      const postsWithDistance = testPosts
+        .map(post => {
+          const distance = calculateDistance(
+            userLocation.latitude,
+            userLocation.longitude,
+            post.latitude,
+            post.longitude
+          );
+          console.log(`投稿 ${post.post_id}: 距離 ${distance.toFixed(0)}m`); // 各投稿の距離
+          return {
+            ...post,
+            distance
+          };
+        })
+        .filter(post => {
+          const isWithinRange = post.distance <= 100000; // 100km以内
+          console.log(`投稿 ${post.post_id}: 100km以内 ${isWithinRange ? '○' : '×'}`); // 範囲内かチェック
+          return isWithinRange;
+        })
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 10); // 上位10件
+
+      console.log('フィルター後の投稿:', postsWithDistance); // フィルター後の結果
+      console.log('最終表示件数:', postsWithDistance.length); // 最終表示件数
+
+      setNearbyPosts(postsWithDistance);
+      */
+    } catch (err) {
+      console.error('投稿取得エラー:', err);
+      console.error('エラーの詳細:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : 'No stack trace',
+        error: err
+      });
+      
+      let errorMessage = '投稿データの取得中にエラーが発生しました';
+      if (err instanceof Error) {
+        errorMessage = `投稿データの取得中にエラーが発生しました: ${err.message}`;
+      } else if (typeof err === 'object' && err !== null) {
+        errorMessage = `投稿データの取得中にエラーが発生しました: ${JSON.stringify(err)}`;
+      }
+      
+      setSupabaseError(errorMessage);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
+  // 2点間の距離を計算（Haversine formula）
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // 地球の半径（km）
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distanceKm = R * c;
+    const distanceM = distanceKm * 1000; // メートル単位で返す
+    
+    console.log(`距離計算: (${lat1}, ${lon1}) → (${lat2}, ${lon2}) = ${distanceM.toFixed(0)}m`);
+    
+    return distanceM;
+  };
+
+  // 市名を取得
+  const fetchCityName = async (latitude: number, longitude: number) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`
+      );
+      const data = await response.json();
+      
+      if (data.address) {
+        // 日本の住所の場合、市名を取得
+        const city = data.address.city || data.address.town || data.address.village || data.address.county || '不明';
+        setCityName(city);
+        console.log('🏙️ 市名を取得しました:', city);
+      }
+    } catch (error) {
+      console.error('市名取得エラー:', error);
+      setCityName('不明');
+    }
+  };
+
+  // 緯度経度から住所を取得
+  const fetchAddress = async (latitude: number, longitude: number): Promise<string> => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&accept-language=ja`
+      );
+      const data = await response.json();
+      
+      if (data.display_name) {
+        // 日本語の住所を返す
+        return data.display_name;
+      } else if (data.address) {
+        // 個別の住所要素から組み立て
+        const address = data.address;
+        const parts = [];
+        
+        if (address.house_number) parts.push(address.house_number);
+        if (address.road) parts.push(address.road);
+        if (address.suburb) parts.push(address.suburb);
+        if (address.city_district) parts.push(address.city_district);
+        if (address.city) parts.push(address.city);
+        if (address.state) parts.push(address.state);
+        if (address.postcode) parts.push(address.postcode);
+        if (address.country) parts.push(address.country);
+        
+        return parts.join(', ');
+      }
+      
+      return '住所を取得できませんでした';
+    } catch (error) {
+      console.error('住所取得エラー:', error);
+      return '住所を取得できませんでした';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">位置情報を取得中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg max-w-md">
+          <h2 className="text-lg font-bold mb-2">エラー</h2>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-screen bg-gray-50 pb-8">
+      {/* 地図表示 - 画面いっぱい */}
+      <div className="w-full h-full">
+        {loadingPosts ? (
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">地図を読み込み中...</p>
+            </div>
+          </div>
+        ) : nearbyPosts.length > 0 ? (
+          <>
+            {/* 地図表示 */}
+            <div className="w-full h-full">
+              <MapWithPins 
+                userLocation={location!}
+                nearbyPosts={nearbyPosts}
+              />
+            </div>
+            
+            {/* 投稿リスト - 下側からスライドアコーディオン */}
+            <div className={`fixed bottom-0 right-0 w-full bg-white shadow-lg transition-transform duration-300 ease-in-out ${
+              isAccordionOpen ? 'translate-y-0' : 'translate-y-full'
+            }`} style={{ height: '80vh', backgroundColor: '#FEF4F4' }}>
+              {/* アコーディオントグルボタン */}
+              <button
+                onClick={() => setIsAccordionOpen(!isAccordionOpen)}
+                className={`absolute top-0 left-0 w-full transform -translate-y-full bg-white border border-gray-200 rounded-t-lg px-4 py-3 shadow-lg hover:bg-gray-50 transition-colors ${
+                  isAccordionOpen ? 'text-gray-600' : 'text-blue-600'
+                }`}
+              >
+                <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto"></div>
+              </button>
+              
+              {/* 投稿リストの内容 */}
+              <div className="h-full flex flex-col">
+                <div className="p-4 border-b border-gray-200" style={{ backgroundColor: '#FEF4F4' }}>
+                  <div className="flex items-center">
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      {cityName ? `${cityName}の投稿` : '近くの投稿'}
+                    </h3>
+                    <span className="text-xs text-gray-500 ml-2">
+                      {nearbyPosts.length}件
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-4" style={{ backgroundColor: '#FEF4F4' }}>
+                  <div className="space-y-3">
+                    {nearbyPosts.map((post) => (
+                      <div key={post.post_id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors bg-white">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="text-sm font-semibold text-gray-800">
+                            {post.username}
+                          </h4>
+                          <span className="text-xs text-gray-500 bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                            {post.distance.toFixed(0)}m
+                          </span>
+                        </div>
+                        
+                        {/* 画像と情報を横並びで表示 */}
+                        {post.image_url && (
+                          <div className="mb-3 flex items-start space-x-3">
+                            {/* 画像 */}
+                            <img 
+                              src={post.image_url} 
+                              alt={`投稿 ${post.post_id} の画像`}
+                              className="w-24 h-24 object-cover rounded-lg flex-shrink-0"
+                              onError={(e) => {
+                                console.log('画像読み込みエラー:', post.image_url);
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                            
+                            {/* 情報（右隣） */}
+                            <div className="text-xs text-gray-600 space-y-1 flex-1">
+                              {/* 住所表示 */}
+                              {post.address && (
+                                <div className="mb-2">
+                                  <div className="text-gray-800 font-medium">📍 {post.address}</div>
+                                </div>
+                              )}
+                              
+                              {post.created_at && (
+                                <div className="flex items-center pt-1">
+                                  <span className="w-12 text-gray-500">投稿日:</span>
+                                  <span className="text-xs">{new Date(post.created_at).toLocaleDateString('ja-JP')}</span>
+                                </div>
+                              )}
+                              
+                              {/* いいね数 */}
+                              <div className="flex items-center pt-1">
+                                <span className="w-12 text-gray-500">いいね:</span>
+                                <span className="text-xs">{post.likes_count}件</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* 画像がない場合の情報表示 */}
+                        {!post.image_url && (
+                          <div className="text-xs text-gray-600 space-y-1 mb-3">
+                            {/* 住所表示 */}
+                            {post.address && (
+                              <div className="mb-2">
+                                <div className="text-gray-800 font-medium">📍 {post.address}</div>
+                              </div>
+                            )}
+                            
+                            {post.created_at && (
+                              <div className="flex items-center pt-1">
+                                <span className="w-16 text-gray-500">投稿日:</span>
+                                <span className="text-xs">{new Date(post.created_at).toLocaleDateString('ja-JP')}</span>
+                              </div>
+                            )}
+                            
+                            {/* いいね数 */}
+                            <div className="flex items-center pt-1">
+                              <span className="w-16 text-gray-500">いいね:</span>
+                              <span className="text-xs">{post.likes_count}件</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-gray-600">100km以内に投稿が見つかりませんでした</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+} 
