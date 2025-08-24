@@ -7,6 +7,7 @@ interface PostActionsProps {
   isLiked: boolean;
   commentsCount: number;
   onLike: () => void;
+  onCommentClick: () => void;
   className?: string;
 }
 
@@ -15,6 +16,7 @@ export function PostActions({
   isLiked, 
   commentsCount, 
   onLike, 
+  onCommentClick,
   className = '' 
 }: PostActionsProps) {
   return (
@@ -27,10 +29,13 @@ export function PostActions({
         <span className="text-sm">{likesCount}</span>
       </button>
       
-      <div className="flex items-center space-x-2 text-black">
+      <button
+        onClick={onCommentClick}
+        className="flex items-center space-x-2 text-black hover:text-gray-600 transition-colors"
+      >
         <MessageCircle className="w-6 h-6" />
         <span className="text-sm">{commentsCount}</span>
-      </div>
+      </button>
     </div>
   );
 }

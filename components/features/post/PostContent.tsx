@@ -12,6 +12,7 @@ interface PostContentProps {
   username: string;
   caption: string;
   onLike: () => void;
+  onCommentClick: () => void;
   className?: string;
 }
 
@@ -23,6 +24,7 @@ export function PostContent({
   username,
   caption,
   onLike,
+  onCommentClick,
   className = ''
 }: PostContentProps) {
   return (
@@ -36,6 +38,7 @@ export function PostContent({
         isLiked={isLiked}
         commentsCount={commentsCount}
         onLike={onLike}
+        onCommentClick={onCommentClick}
       />
       
       {/* Post Caption */}

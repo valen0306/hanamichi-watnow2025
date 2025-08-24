@@ -7,6 +7,7 @@ import { ArrowLeft, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserInfo } from '@/components/features/post/UserInfo';
 import { PostContent } from '@/components/features/post/PostContent';
+import { CommentSection } from '@/components/features/post/CommentSection';
 import { getUserProfile } from '@/lib/user';
 
 const supabase = createClient(
@@ -41,6 +42,7 @@ export default function PostDetailPage() {
   const [likesCount, setLikesCount] = useState<number>(0);
   const [isLiked, setIsLiked] = useState<boolean>(false);
   const [commentsCount, setCommentsCount] = useState<number>(0);
+  const [isCommentSectionOpen, setIsCommentSectionOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
 
@@ -51,10 +53,11 @@ export default function PostDetailPage() {
     }
   }, [postId, user]);
 
-  // postDataが取得された後にusernameを取得
+  // postDataが取得された後にusernameとコメント数を取得
   useEffect(() => {
     if (postData) {
       fetchUsername();
+      fetchCommentCount();
     }
   }, [postData]);
 
@@ -98,6 +101,26 @@ export default function PostDetailPage() {
       setError('データの取得に失敗しました');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCommentCount = async () => {
+    try {
+      if (!postId) {
+        console.log('postIdが設定されていません');
+        return;
+      }
+
+      console.log('モックコメント数取得開始:', { postId });
+
+      // モックでコメント数を設定（1-5のランダムな数）
+      const mockCount = Math.floor(Math.random() * 5) + 1;
+      setCommentsCount(mockCount);
+      console.log('モックコメント数取得成功:', mockCount);
+      
+    } catch (err) {
+      console.error('モックコメント数取得エラー:', err);
+      setCommentsCount(0);
     }
   };
 
@@ -205,6 +228,18 @@ export default function PostDetailPage() {
     router.push('/timeline');
   };
 
+  const handleCommentClick = () => {
+    setIsCommentSectionOpen(true);
+  };
+
+  const handleCommentSectionClose = () => {
+    setIsCommentSectionOpen(false);
+  };
+
+  const handleCommentCountChange = (count: number) => {
+    setCommentsCount(count);
+  };
+
   // 認証チェック
   if (!user || !user.id) {
     return (
@@ -286,9 +321,19 @@ export default function PostDetailPage() {
           username={username}
           caption={caption}
           onLike={handleLike}
+          onCommentClick={handleCommentClick}
           className="h-[calc(100vh-8rem)] overflow-y-auto"
         />
       </div>
+
+      {/* Comment Section Modal */}
+      <CommentSection
+        postId={postId}
+        currentUserId={user?.id || ''}
+        isOpen={isCommentSectionOpen}
+        onClose={handleCommentSectionClose}
+        onCommentCountChange={handleCommentCountChange}
+      />
     </div>
   );
 }
