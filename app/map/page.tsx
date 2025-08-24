@@ -131,30 +131,6 @@ export default function UserMapPage() {
         distance: 0,
         likes_count: 7,
         address: 'テスト住所3'
-      },
-      {
-        post_id: 'test_004',
-        user_id: 'test_user_004',
-        username: 'テストユーザー4',
-        image_url: 'https://via.placeholder.com/300x300/FBBC04/FFFFFF?text=Test+4',
-        latitude: centerLocation.latitude - 0.001, // 約100m南
-        longitude: centerLocation.longitude + 0.003, // 約300m東
-        created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3日前
-        distance: 0,
-        likes_count: 2,
-        address: 'テスト住所4'
-      },
-      {
-        post_id: 'test_005',
-        user_id: 'test_user_005',
-        username: 'テストユーザー5',
-        image_url: 'https://via.placeholder.com/300x300/9C27B0/FFFFFF?text=Test+5',
-        latitude: centerLocation.latitude + 0.002, // 約200m北
-        longitude: centerLocation.longitude + 0.002, // 約200m東
-        created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4日前
-        distance: 0,
-        likes_count: 8,
-        address: 'テスト住所5'
       }
     ];
 
@@ -182,7 +158,7 @@ export default function UserMapPage() {
         return isWithinRange;
       })
       .sort((a, b) => a.distance - b.distance)
-      .slice(0, 10); // 上位10件
+      .slice(0, 3); // デバッグ用に3件に制限
 
     console.log('フィルター後の投稿:', postsWithDistance);
     console.log('最終表示件数:', postsWithDistance.length);
@@ -613,7 +589,7 @@ export default function UserMapPage() {
       // 距離順にソートして上位10件を取得
       const sortedPosts = filteredPosts
         .sort((a, b) => a.distance - b.distance)
-        .slice(0, 10); // 上位10件
+        .slice(0, 3); // デバッグ用に3件に制限
 
       console.log('フィルター後の投稿:', sortedPosts); // フィルター後の結果
       console.log('最終表示件数:', sortedPosts.length); // 最終表示件数
