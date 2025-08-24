@@ -1,7 +1,7 @@
 {
-  "name": "Hanamichi WatNow 2025",
-  "short_name": "WatNow",
-  "description": "花道の今を共有するアプリ",
+  "name": "Hanamichi watnow 2025",
+  "short_name": "hanamichi",
+  "description": "全国の花付きとつながれるアプリ",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -9,12 +9,12 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon512_maskable.png",
+      "src": "/pwa_icon.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "/icon512_rounded.png",
+      "src": "/pwa_icon.png",
       "sizes": "512x512",
       "type": "image/png"
     }
