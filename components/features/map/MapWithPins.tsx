@@ -169,9 +169,79 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
       // フォールバック: 従来のMarkerを使用
       try {
         console.log('従来のMarkerを使用してマーカーを作成');
-        const marker = new window.google.maps.Marker(options);
-        console.log('従来のMarker作成成功:', marker);
-        return marker;
+        
+        // contentプロパティがある場合は、従来のMarker用に変換
+        if (options.content) {
+          console.log('contentプロパティを従来のMarker用に変換');
+          
+          // 投稿番号を取得
+          const postNumber = options.content.querySelector('[style*="background: #4285F4"]')?.textContent || '●';
+          
+          // 画像URLを取得（投稿マーカーの場合）
+          let imageUrl = '';
+          const imgElement = options.content.querySelector('img');
+          if (imgElement && imgElement.src) {
+            imageUrl = imgElement.src;
+            console.log('投稿画像URLを発見:', imageUrl);
+          }
+          
+          // 従来のMarker用のオプションを作成
+          const legacyOptions = {
+            position: options.position,
+            map: options.map,
+            title: options.title,
+            // 投稿番号をラベルとして表示
+            label: {
+              text: postNumber,
+              color: 'white',
+              fontSize: '16px',
+              fontWeight: 'bold'
+            },
+            // カスタムアイコンを作成（画像付き）
+            icon: {
+              url: imageUrl ? 
+                // 画像がある場合は画像付きのSVG
+                `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                  <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- 背景円（画像の境界線） -->
+                    <circle cx="40" cy="40" r="40" fill="white" stroke="#EA4335" stroke-width="3"/>
+                    <!-- 画像を円形でクリップ -->
+                    <defs>
+                      <clipPath id="circleClip">
+                        <circle cx="40" cy="40" r="32"/>
+                      </clipPath>
+                    </defs>
+                    <!-- 画像 -->
+                    <image href="${imageUrl}" x="8" y="8" width="64" height="64" clip-path="url(#circleClip)"/>
+                    <!-- 投稿番号ラベル -->
+                    <circle cx="65" cy="15" r="12" fill="#4285F4" stroke="white" stroke-width="2"/>
+                    <text x="65" y="20" text-anchor="middle" fill="white" font-size="12" font-weight="bold">${postNumber}</text>
+                  </svg>
+                `)}` :
+                // 画像がない場合はシンプルなSVG
+                `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                  <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- 背景円 -->
+                    <circle cx="40" cy="40" r="40" fill="#EA4335"/>
+                    <!-- 投稿番号 -->
+                    <text x="40" y="50" text-anchor="middle" fill="white" font-size="20" font-weight="bold">${postNumber}</text>
+                  </svg>
+                `)}`,
+              scaledSize: new window.google.maps.Size(80, 80),
+              anchor: new window.google.maps.Point(40, 80)
+            }
+          };
+          
+          console.log('従来のMarker用オプション:', legacyOptions);
+          const marker = new window.google.maps.Marker(legacyOptions);
+          console.log('従来のMarker作成成功:', marker);
+          return marker;
+        } else {
+          // contentプロパティがない場合は通常のMarker
+          const marker = new window.google.maps.Marker(options);
+          console.log('従来のMarker作成成功:', marker);
+          return marker;
+        }
       } catch (error) {
         console.error('マーカー作成に失敗:', error);
         
