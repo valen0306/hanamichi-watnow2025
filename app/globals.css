@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2family=Raleway:wght@100&display=swap');
+
 @import "tailwindcss";
 
 :root {
@@ -10,6 +12,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-zen: "Zen Maru Gothic", sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
