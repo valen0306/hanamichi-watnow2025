@@ -249,33 +249,18 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
                 naturalHeight: testImg.naturalHeight
               });
               
-              // 画像をBase64エンコードしてSVGに埋め込む
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              canvas.width = 64;
-              canvas.height = 64;
+              // セキュリティ制限を回避するため、画像の存在確認のみ行う
+              console.log(`投稿${postNumber}の画像が正常に読み込まれました。マーカーに画像付きアイコンを設定します。`);
               
-              // 円形でクリップ
-              ctx?.beginPath();
-              ctx?.arc(32, 32, 32, 0, 2 * Math.PI);
-              ctx?.clip();
-              
-              // 画像を描画
-              ctx?.drawImage(testImg, 0, 0, 64, 64);
-              
-              // Base64エンコード
-              const base64Image = canvas.toDataURL('image/png');
-              console.log(`投稿${postNumber}のBase64画像生成完了:`, base64Image.substring(0, 50) + '...');
-              
-              // マーカーのアイコンを更新
+              // 画像付きのSVGアイコンを作成（外部URLを直接参照）
               try {
-                const updatedIcon = {
+                const imageIcon = {
                   url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
                     <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <!-- 背景円（画像の境界線） -->
                       <circle cx="40" cy="40" r="40" fill="white" stroke="#EA4335" stroke-width="3"/>
-                      <!-- Base64エンコードされた画像 -->
-                      <image href="${base64Image}" x="8" y="8" width="64" height="64"/>
+                      <!-- 画像（外部URLを直接参照） -->
+                      <image href="${imageUrl}" x="8" y="8" width="64" height="64" preserveAspectRatio="xMidYMid slice"/>
                       <!-- 投稿番号ラベル -->
                       <circle cx="65" cy="15" r="12" fill="#4285F4" stroke="white" stroke-width="2"/>
                       <text x="65" y="20" text-anchor="middle" fill="white" font-size="12" font-weight="bold">${postNumber}</text>
@@ -287,17 +272,56 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
                 
                 // setIconメソッドの存在確認
                 if ((marker as any).setIcon) {
-                  (marker as any).setIcon(updatedIcon);
-                  console.log(`投稿${postNumber}のマーカーアイコンをBase64画像で更新完了`);
+                  (marker as any).setIcon(imageIcon);
+                  console.log(`投稿${postNumber}のマーカーアイコンを画像付きに更新完了`);
                 } else {
                   console.warn(`投稿${postNumber}のマーカーにsetIconメソッドが存在しません`);
                 }
-              } catch (updateError) {
-                console.warn(`投稿${postNumber}のマーカーアイコン更新に失敗:`, updateError);
+              } catch (iconUpdateError) {
+                console.warn(`投稿${postNumber}の画像付きアイコン作成に失敗:`, iconUpdateError);
+                
+                // フォールバック: シンプルなアイコン
+                const fallbackIcon = {
+                  url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <!-- 背景円 -->
+                      <circle cx="40" cy="40" r="40" fill="#EA4335"/>
+                      <!-- 投稿番号 -->
+                      <text x="40" y="50" text-anchor="middle" fill="white" font-size="20" font-weight="bold">${postNumber}</text>
+                    </svg>
+                  `)}`,
+                  scaledSize: new window.google.maps.Size(80, 80),
+                  anchor: new window.google.maps.Point(40, 80)
+                };
+                
+                if ((marker as any).setIcon) {
+                  (marker as any).setIcon(fallbackIcon);
+                  console.log(`投稿${postNumber}のマーカーアイコンをフォールバックアイコンに更新完了`);
+                }
               }
             };
             testImg.onerror = (error) => {
               console.error(`投稿${postNumber}の画像読み込みエラー:`, error);
+              
+              // 画像読み込みエラー時のフォールバック
+              const errorIcon = {
+                url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                  <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- 背景円 -->
+                    <circle cx="40" cy="40" r="40" fill="#EA4335"/>
+                    <!-- エラー表示 -->
+                    <text x="40" y="45" text-anchor="middle" fill="white" font-size="12" font-weight="bold">画像</text>
+                    <text x="40" y="60" text-anchor="middle" fill="white" font-size="12" font-weight="bold">エラー</text>
+                  </svg>
+                `)}`,
+                scaledSize: new window.google.maps.Size(80, 80),
+                anchor: new window.google.maps.Point(40, 80)
+              };
+              
+              if ((marker as any).setIcon) {
+                (marker as any).setIcon(errorIcon);
+                console.log(`投稿${postNumber}のマーカーアイコンをエラーアイコンに更新完了`);
+              }
             };
             testImg.src = imageUrl;
           }
