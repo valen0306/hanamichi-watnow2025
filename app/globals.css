@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2family=Raleway:wght@100&display=swap');
+
 @import "tailwindcss";
 
 :root {
@@ -10,6 +12,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-zen-maru-gothic);
   --font-mono: var(--font-zen-maru-gothic);
+
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,4 +26,21 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-zen-maru-gothic), 'Zen Maru Gothic', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+}
+
+/* 蝶の左右移動アニメーション */
+@keyframes butterfly-fly {
+  0%, 100% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-butterfly-fly {
+  animation: butterfly-fly 35s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  position: relative;
+  left: 50%;
+  margin-left: -2rem; /* 動画の幅の半分を調整 */
 }

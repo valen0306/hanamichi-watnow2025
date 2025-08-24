@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { Zen_Maru_Gothic } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
-import Navigation from '@/components/Navigation';
+import NavigationWrapper from '@/components/ui/NavigationWrapper';
+import FooterWrapper from '@/components/ui/FooterWrapper';
 
 const zenMaruGothic = Zen_Maru_Gothic({
   variable: '--font-zen-maru-gothic',
@@ -50,7 +51,7 @@ export default function RootLayout({
         
         {/* Google Maps API - 一度だけ読み込み */}
         <script
-          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places,marker&v=weekly`}
           async
           defer
         />
@@ -59,8 +60,11 @@ export default function RootLayout({
         className={`${zenMaruGothic.variable} antialiased`}
       >
         <AuthProvider>
-          <Navigation />
-          {children}
+          <NavigationWrapper />
+          <main className="min-h-screen pb-20 pt-16">
+            {children}
+          </main>
+          <FooterWrapper />
         </AuthProvider>
       </body>
     </html>
