@@ -30,100 +30,67 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
 
   useEffect(() => {
     if (!mapRef.current || mapLoaded) return;
-
-    // Google Maps APIの読み込み
+  
     const loadGoogleMaps = () => {
-      // 既に読み込み済みの場合
-      if (window.google && window.google.maps) {
+      if (window.google?.maps) {
         initializeMap();
         return;
       }
-
-      // layout.tsxでスクリプトが読み込まれている場合は待機
+  
       const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
       if (existingScript) {
         const checkLoaded = setInterval(() => {
-          if (window.google && window.google.maps) {
+          if (window.google?.maps) {
             clearInterval(checkLoaded);
             initializeMap();
           }
         }, 100);
-        return;
+  
+        return () => clearInterval(checkLoaded);
       }
-
-      // フォールバック: スクリプトが存在しない場合のみ新しく読み込み
+  
       console.warn('Google Maps APIスクリプトが見つかりません。layout.tsxでの読み込みを確認してください。');
     };
-
+  
     const initializeMap = () => {
-      if (!mapRef.current || !window.google || !window.google.maps) return;
-
-      // デバッグ: 利用可能なAPIクラスを確認
+      if (!mapRef.current || !window.google?.maps) return;
+  
       console.log('Google Maps API classes:', {
-        maps: window.google.maps,
-        Marker: window.google.maps.Marker,
-        // AdvancedMarkerElementが利用可能かチェック
-        hasAdvancedMarker: 'marker' in window.google.maps && 'AdvancedMarkerElement' in (window.google.maps as any).marker
+        hasAdvancedMarker: !!window.google.maps.marker?.AdvancedMarkerElement
       });
-
-      // 初期ズームレベルを投稿の距離に基づいて調整
-      let initialZoom = 14; // デフォルトズームレベル
-      
+  
+      let initialZoom = 14;
       if (nearbyPosts.length > 0) {
         const maxDistance = Math.max(...nearbyPosts.map(post => post.distance));
-        console.log('初期化時の最大距離:', maxDistance, 'm');
-        
-        if (maxDistance <= 500) {
-          // 500m以内の場合は詳細表示
-          initialZoom = 16;
-        } else if (maxDistance <= 2000) {
-          // 2km以内の場合は中程度の詳細
-          initialZoom = 15;
-        } else if (maxDistance >= 10000) {
-          // 10km以上の場合は広範囲表示
-          initialZoom = 12;
-        }
+        if (maxDistance <= 500) initialZoom = 16;
+        else if (maxDistance <= 2000) initialZoom = 15;
+        else if (maxDistance >= 10000) initialZoom = 12;
       }
-
+  
       const map = new window.google.maps.Map(mapRef.current, {
         center: { lat: userLocation.latitude, lng: userLocation.longitude },
-        zoom: initialZoom, // 動的に計算されたズームレベル
+        zoom: initialZoom,
+        mapId: "25053adb9cb60b66489752fa", // AdvancedMarker用に必須
+        // @ts-ignore
         mapTypeId: window.google.maps.MapTypeId.ROADMAP,
         mapTypeControl: true,
         streetViewControl: false,
         fullscreenControl: true,
         zoomControl: true,
-        styles: [
-          {
-            featureType: "poi",
-            elementType: "labels",
-            stylers: [{ visibility: "off" }]
-          }
-        ]
+        styles: [{ featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }]
       });
-
+  
       setMapInstance(map);
       setMapLoaded(true);
-      
-      console.log('地図初期化完了:', {
-        center: { lat: userLocation.latitude, lng: userLocation.longitude },
-        zoom: initialZoom,
-        nearbyPostsCount: nearbyPosts.length,
-        message: '地図の移動が有効化されました'
-      });
     };
-
+  
     loadGoogleMaps();
-
+  
     return () => {
-      // クリーンアップ
-      if (window.google && window.google.maps) {
-        // マーカーを削除
-        markers.forEach(marker => marker.setMap(null));
-      }
+      markers.forEach(marker => marker.setMap(null));
     };
-  }, [userLocation, mapLoaded, nearbyPosts]); // markersを依存関係から削除
-
+  }, [userLocation, mapLoaded, nearbyPosts]);
+  
   // 投稿のピンを表示
   useEffect(() => {
     if (!mapInstance || !nearbyPosts.length || !window.google || !window.google.maps) return;
