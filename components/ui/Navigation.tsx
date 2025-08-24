@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Navigation() {
   const { user, profile, signOut, loading } = useAuth();
@@ -16,11 +17,19 @@ export default function Navigation() {
 
   if (loading) {
     return (
-      <nav className="bg-white shadow-lg">
+      <nav className="bg-[#FEF4F4] shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <div className="text-xl font-bold text-gray-900">WatNow</div>
+              <div className="w-32 h-8 relative">
+                <Image
+                  src="/hanamichi-logo.png"
+                  alt="hanamichi"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
             </div>
             <div className="flex items-center">
               <div className="text-gray-500">読み込み中...</div>
@@ -32,12 +41,18 @@ export default function Navigation() {
   }
 
   return (
-    <nav className="bg-white shadow-lg">
+    <nav className="bg-[#FEF4F4] shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="text-xl font-bold text-gray-900">
-              WatNow
+            <Link href="/timeline" className="w-32 h-8 relative">
+              <Image
+                src="/hanamichi-logo.png"
+                alt="hanamichi"
+                fill
+                className="object-contain"
+                priority
+              />
             </Link>
           </div>
 
@@ -49,7 +64,7 @@ export default function Navigation() {
                 </span>
                 <button
                   onClick={handleSignOut}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  className="bg-[#FFBAC4] hover:bg-[#FFBAC4]/80 text-[#000000]/54 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
                 >
                   ログアウト
                 </button>
@@ -57,7 +72,7 @@ export default function Navigation() {
             ) : (
               <Link
                 href="/auth"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                className="bg-[#FFBAC4] hover:bg-[#FFBAC4]/80 text-[#000000]/54 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
               >
                 ログイン
               </Link>
