@@ -102,107 +102,14 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
         ]
       });
 
-      // 地図の移動を制限するためのCSSスタイルを適用
-      if (mapRef.current) {
-        const mapElement = mapRef.current.querySelector('.gm-style') || mapRef.current;
-        if (mapElement) {
-          (mapElement as HTMLElement).style.pointerEvents = 'none';
-          console.log('地図の移動を無効化しました（CSSレベル）');
-        }
-      }
-
-      // ズームコントロールのみ有効にする
-      const zoomControls = mapRef.current?.querySelectorAll('.gm-control-active');
-      if (zoomControls) {
-        zoomControls.forEach(control => {
-          (control as HTMLElement).style.pointerEvents = 'auto';
-        });
-        console.log('ズームコントロールは有効です');
-      }
-
-      // 地図の移動を制限するイベントリスナーを追加
-      setTimeout(() => {
-        // 地図要素の移動を制限
-        const mapCanvas = mapRef.current?.querySelector('canvas');
-        if (mapCanvas) {
-          // マウスイベントを完全に無効化
-          const mouseEvents = ['mousedown', 'mousemove', 'mouseup', 'click', 'dblclick'];
-          mouseEvents.forEach(eventType => {
-            mapCanvas.addEventListener(eventType, (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              e.stopImmediatePropagation();
-              return false;
-            }, { capture: true, passive: false });
-          });
-          
-          // タッチイベントを完全に無効化
-          const touchEvents = ['touchstart', 'touchmove', 'touchend', 'touchcancel'];
-          touchEvents.forEach(eventType => {
-            mapCanvas.addEventListener(eventType, (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              e.stopImmediatePropagation();
-              return false;
-            }, { capture: true, passive: false });
-          });
-          
-          // キーボードイベントも無効化
-          const keyEvents = ['keydown', 'keyup', 'keypress'];
-          keyEvents.forEach(eventType => {
-            mapCanvas.addEventListener(eventType, (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              e.stopImmediatePropagation();
-              return false;
-            }, { capture: true, passive: false });
-          });
-          
-          console.log('地図の移動を完全に無効化しました（JavaScriptレベル）');
-        }
-        
-        // 地図コンテナ全体の移動も制限
-        const mapContainer = mapRef.current?.querySelector('.gm-style');
-        if (mapContainer) {
-          const containerEvents = ['mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend'];
-          containerEvents.forEach(eventType => {
-            mapContainer.addEventListener(eventType, (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              e.stopImmediatePropagation();
-              return false;
-            }, { capture: true, passive: false });
-          });
-          
-          console.log('地図コンテナの移動も無効化しました');
-        }
-        
-        // 地図全体の移動を防ぐための追加制限
-        const allMapElements = mapRef.current?.querySelectorAll('*');
-        if (allMapElements) {
-          allMapElements.forEach(element => {
-            if (element instanceof HTMLElement) {
-              // 地図関連の要素のみ移動を制限
-              if (element.className.includes('gm-') || element.tagName === 'CANVAS') {
-                element.style.pointerEvents = 'none';
-                element.style.userSelect = 'none';
-                element.style.webkitUserSelect = 'none';
-              }
-            }
-          });
-          
-          console.log('地図要素全体の移動を無効化しました');
-        }
-        
-      }, 1000);
-
       setMapInstance(map);
       setMapLoaded(true);
       
       console.log('地図初期化完了:', {
         center: { lat: userLocation.latitude, lng: userLocation.longitude },
         zoom: initialZoom,
-        nearbyPostsCount: nearbyPosts.length
+        nearbyPostsCount: nearbyPosts.length,
+        message: '地図の移動が有効化されました'
       });
     };
 
@@ -616,14 +523,6 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
       <div 
         ref={mapRef} 
         className="w-full h-full"
-        style={{
-          // 地図の移動を制限するCSSスタイル
-          userSelect: 'none',
-          WebkitUserSelect: 'none',
-          // 地図の移動を完全に無効化
-          overflow: 'hidden',
-          position: 'relative'
-        }}
       />
       
       {!mapLoaded && (
