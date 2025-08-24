@@ -24,3 +24,20 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* 蝶の左右移動アニメーション */
+@keyframes butterfly-fly {
+  0%, 100% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-butterfly-fly {
+  animation: butterfly-fly 35s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  position: relative;
+  left: 50%;
+  margin-left: -2rem; /* 動画の幅の半分を調整 */
+}

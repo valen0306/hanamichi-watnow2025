@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { AuthInput } from '@/components/ui/AuthInput';
+import { ButterflyVideo } from '@/components/ui/ButterflyVideo';
 
 export default function AuthPage() {
   const [email, setEmail] = useState('');
@@ -21,8 +22,8 @@ export default function AuthPage() {
   // ログイン状態を確認
   useEffect(() => {
     if (user && !authLoading) {
-      console.log('User is already logged in, redirecting to home...');
-      router.push('/');
+      console.log('User is already logged in, redirecting to timeline...');
+      router.push('/timeline');
     }
   }, [user, authLoading, router]);
 
@@ -62,16 +63,14 @@ export default function AuthPage() {
         result = await signUp(email, password, username.trim());
         if (!result.error) {
           setMessage('アカウントが作成されました！自動的にログインされます。');
-          // サインアップ成功後、少し待ってからホームページにリダイレクト
-          setTimeout(() => {
-            router.push('/');
-          }, 2000);
+          // サインアップ成功後、すぐにタイムラインにリダイレクト
+          router.push('/timeline');
         }
       } else {
         result = await signIn(email, password);
         if (!result.error) {
-          // ログイン成功後、ホームページにリダイレクト
-          router.push('/');
+          // ログイン成功後、タイムラインにリダイレクト
+          router.push('/timeline');
           return;
         }
       }
@@ -207,6 +206,43 @@ export default function AuthPage() {
             >
               {isSignUp ? '既にアカウントをお持ちですか？ログイン' : 'アカウントをお持ちでない方はこちら'}
             </button>
+            
+            {/* 蝶の動画を配置 */}
+            <div className="mt-4 w-full overflow-hidden">
+              <ButterflyVideo />
+            </div>
+            
+            {/* 花の装飾を配置 */}
+            <div className="mt-6 flex justify-center space-x-20">
+              <Image
+                src="/flower.png"
+                alt="花"
+                width={36}
+                height={36}
+                className="opacity-60"
+              />
+              <Image
+                src="/flower.png"
+                alt="花"
+                width={36}
+                height={36}
+                className="opacity-60"
+              />
+              <Image
+                src="/flower.png"
+                alt="花"
+                width={36}
+                height={36}
+                className="opacity-60"
+              />
+              <Image
+                src="/flower.png"
+                alt="花"
+                width={36}
+                height={36}
+                className="opacity-60"
+              />
+            </div>
           </div>
         </form>
       </div>

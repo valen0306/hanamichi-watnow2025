@@ -15,7 +15,7 @@ import ClipButton from "@/components/features/camera/cripbottun";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 
 const CameraPost: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [uploadError, setUploadError] = useState<string>("");
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -26,6 +26,15 @@ const CameraPost: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [location, setLocation] = useState<{lat: number; lng: number} | null>(null);
   const [locationError, setLocationError] = useState<string>("");
+
+  // 認証チェック
+  useEffect(() => {
+    if (!authLoading && !user) {
+      console.log('User not authenticated, redirecting to auth...')
+      router.push('/auth')
+      return
+    }
+  }, [user, authLoading, router])
 
   useEffect(() => {
     const startCamera = async () => {
@@ -79,6 +88,22 @@ const CameraPost: React.FC = () => {
       }
     }
   };
+
+  // 認証中は何も表示しない
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-gray-500">認証状態を確認中...</div>
+        </div>
+      </div>
+    )
+  }
+
+  // 未認証の場合は何も表示しない
+  if (!user) {
+    return null
+  }
 
   const handlePost = () => {
     console.log("handlePost called");
