@@ -90,6 +90,127 @@ export default function UserMapPage() {
     );
   }, []);
 
+  // テスト用の投稿データを生成
+  const generateTestPosts = (centerLocation: Location) => {
+    console.log('🧪 テストモード: テストデータを生成します');
+    
+    // 現在地を中心としたテストデータを生成
+    const testPosts = [
+      {
+        post_id: 'test_001',
+        user_id: 'test_user_001',
+        username: 'テストユーザー1',
+        image_url: 'https://via.placeholder.com/300x300/4285F4/FFFFFF?text=Test+1',
+        latitude: centerLocation.latitude + 0.001, // 約100m北
+        longitude: centerLocation.longitude + 0.001, // 約100m東
+        created_at: new Date().toISOString(),
+        distance: 0,
+        likes_count: 5,
+        address: 'テスト住所1'
+      },
+      {
+        post_id: 'test_002',
+        user_id: 'test_user_002',
+        username: 'テストユーザー2',
+        image_url: 'https://via.placeholder.com/300x300/EA4335/FFFFFF?text=Test+2',
+        latitude: centerLocation.latitude - 0.002, // 約200m南
+        longitude: centerLocation.longitude - 0.001, // 約100m西
+        created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1日前
+        distance: 0,
+        likes_count: 3,
+        address: 'テスト住所2'
+      },
+      {
+        post_id: 'test_003',
+        user_id: 'test_user_003',
+        username: 'テストユーザー3',
+        image_url: 'https://via.placeholder.com/300x300/34A853/FFFFFF?text=Test+3',
+        latitude: centerLocation.latitude + 0.003, // 約300m北
+        longitude: centerLocation.longitude - 0.002, // 約200m西
+        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2日前
+        distance: 0,
+        likes_count: 7,
+        address: 'テスト住所3'
+      },
+      {
+        post_id: 'test_004',
+        user_id: 'test_user_004',
+        username: 'テストユーザー4',
+        image_url: 'https://via.placeholder.com/300x300/FBBC04/FFFFFF?text=Test+4',
+        latitude: centerLocation.latitude - 0.001, // 約100m南
+        longitude: centerLocation.longitude + 0.003, // 約300m東
+        created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3日前
+        distance: 0,
+        likes_count: 2,
+        address: 'テスト住所4'
+      },
+      {
+        post_id: 'test_005',
+        user_id: 'test_user_005',
+        username: 'テストユーザー5',
+        image_url: 'https://via.placeholder.com/300x300/9C27B0/FFFFFF?text=Test+5',
+        latitude: centerLocation.latitude + 0.002, // 約200m北
+        longitude: centerLocation.longitude + 0.002, // 約200m東
+        created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4日前
+        distance: 0,
+        likes_count: 8,
+        address: 'テスト住所5'
+      }
+    ];
+
+    console.log('📊 生成されたテストデータ:', testPosts);
+    console.log('📍 現在地を中心としたテスト投稿を生成しました（100m〜300mの範囲）');
+
+    // 距離を計算して近い順にソート
+    const postsWithDistance = testPosts
+      .map(post => {
+        const distance = calculateDistance(
+          centerLocation.latitude,
+          centerLocation.longitude,
+          post.latitude,
+          post.longitude
+        );
+        console.log(`投稿 ${post.post_id}: 距離 ${distance.toFixed(0)}m`);
+        return {
+          ...post,
+          distance
+        };
+      })
+      .filter(post => {
+        const isWithinRange = post.distance <= 100000; // 100km以内
+        console.log(`投稿 ${post.post_id}: 100km以内 ${isWithinRange ? '○' : '×'}`);
+        return isWithinRange;
+      })
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 10); // 上位10件
+
+    console.log('フィルター後の投稿:', postsWithDistance);
+    console.log('最終表示件数:', postsWithDistance.length);
+
+    // テストデータの詳細確認
+    postsWithDistance.forEach((post, index) => {
+      console.log(`テスト投稿${index + 1}の詳細:`, {
+        post_id: post.post_id,
+        image_url: post.image_url,
+        image_url_exists: !!post.image_url,
+        image_url_type: typeof post.image_url,
+        username: post.username,
+        distance: post.distance
+      });
+    });
+
+    setNearbyPosts(postsWithDistance);
+    
+    // 状態設定後の確認
+    setTimeout(() => {
+      console.log('setNearbyPosts後の状態確認:', {
+        nearbyPostsLength: postsWithDistance.length,
+        firstPost: postsWithDistance[0],
+        firstPostImageUrl: postsWithDistance[0]?.image_url
+      });
+    }, 100);
+  };
+
   // 現在地に近い投稿を取得
   const fetchNearbyPosts = async (userLocation: Location) => {
     setLoadingPosts(true);
@@ -677,8 +798,33 @@ export default function UserMapPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg max-w-md">
-          <h2 className="text-lg font-bold mb-2">エラー</h2>
-          <p>{error}</p>
+          <h2 className="text-lg font-bold mb-2">位置情報エラー</h2>
+          <p className="mb-4">{error}</p>
+          
+          {/* テスト用の位置情報を提供 */}
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+            <h3 className="text-sm font-semibold text-blue-800 mb-2">テスト用位置情報</h3>
+            <p className="text-xs text-blue-700 mb-3">
+              位置情報の権限が拒否された場合、テスト用の位置情報を使用してマーカーの表示を確認できます。
+            </p>
+            <button
+              onClick={() => {
+                // 東京駅の座標を使用
+                const testLocation = {
+                  latitude: 35.6812362,
+                  longitude: 139.7671248
+                };
+                setLocation(testLocation);
+                setError('');
+                setLoading(false);
+                fetchCityName(testLocation.latitude, testLocation.longitude);
+                generateTestPosts(testLocation);
+              }}
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition-colors"
+            >
+              東京駅でテスト実行
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -703,6 +849,17 @@ export default function UserMapPage() {
                 userLocation={location!}
                 nearbyPosts={nearbyPosts}
               />
+              
+              {/* デバッグ情報表示 */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="absolute bottom-4 left-4 bg-black bg-opacity-75 text-white p-3 rounded-lg text-xs max-w-xs">
+                  <div className="font-bold mb-2">デバッグ情報</div>
+                  <div>投稿数: {nearbyPosts.length}</div>
+                  <div>最初の投稿画像URL: {nearbyPosts[0]?.image_url || 'なし'}</div>
+                  <div>画像URL存在: {nearbyPosts[0]?.image_url ? '○' : '×'}</div>
+                  <div>画像URL型: {typeof nearbyPosts[0]?.image_url}</div>
+                </div>
+              )}
             </div>
             
             {/* 投稿リスト - 下側からスライドアコーディオン */}

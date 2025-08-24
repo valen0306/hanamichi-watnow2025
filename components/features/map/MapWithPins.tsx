@@ -285,9 +285,37 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
     console.log('投稿マーカー作成開始');
     nearbyPosts.forEach((post, index) => {
       console.log(`投稿${index + 1}のマーカー作成:`, post);
+      console.log(`投稿${index + 1}の画像URL:`, post.image_url);
+      console.log(`投稿${index + 1}の画像URL型:`, typeof post.image_url);
+      console.log(`投稿${index + 1}の画像URL存在確認:`, !!post.image_url);
+      
+      // 画像URLの詳細確認
+      if (post.image_url) {
+        console.log(`投稿${index + 1}の画像URL詳細:`, {
+          url: post.image_url,
+          length: post.image_url.length,
+          startsWithHttp: post.image_url.startsWith('http'),
+          isValidUrl: post.image_url.includes('://')
+        });
+      } else {
+        console.warn(`投稿${index + 1}の画像URLが存在しません`);
+      }
       
       // カスタムピンのHTML要素を作成
       const markerElement = document.createElement('div');
+      
+      // 画像URLの処理
+      let imageUrl = post.image_url;
+      if (!imageUrl) {
+        imageUrl = 'https://via.placeholder.com/65x65/EA4335/FFFFFF?text=No+Image';
+        console.log(`投稿${index + 1}: 画像URLが存在しないため、プレースホルダーを使用`);
+      } else if (!imageUrl.startsWith('http')) {
+        imageUrl = 'https://via.placeholder.com/65x65/EA4335/FFFFFF?text=Invalid+URL';
+        console.log(`投稿${index + 1}: 画像URLが無効なため、プレースホルダーを使用`);
+      }
+      
+      console.log(`投稿${index + 1}の最終画像URL:`, imageUrl);
+      
       markerElement.innerHTML = `
         <div style="
           position: relative;
@@ -311,14 +339,15 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
             z-index: 2;
           ">
             <img 
-              src="${post.image_url || 'https://via.placeholder.com/65x65/EA4335/FFFFFF?text=No+Image'}" 
-              alt="投稿画像"
+              src="${imageUrl}" 
+              alt="投稿画像 ${index + 1}"
               style="
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
               "
-              onerror="this.src='https://via.placeholder.com/65x65/EA4335/FFFFFF?text=Error'"
+              onload="console.log('画像読み込み成功:', '${imageUrl}')"
+              onerror="console.error('画像読み込みエラー:', '${imageUrl}', this.src)"
             />
           </div>
           
@@ -358,6 +387,8 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
           </div>
         </div>
       `;
+      
+      console.log(`投稿${index + 1}のマーカーHTML作成完了:`, markerElement.innerHTML);
       
       const marker = createMarker({
         position: { lat: post.latitude, lng: post.longitude },
