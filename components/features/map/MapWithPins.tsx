@@ -248,6 +248,53 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
                 naturalWidth: testImg.naturalWidth,
                 naturalHeight: testImg.naturalHeight
               });
+              
+              // 画像をBase64エンコードしてSVGに埋め込む
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              canvas.width = 64;
+              canvas.height = 64;
+              
+              // 円形でクリップ
+              ctx?.beginPath();
+              ctx?.arc(32, 32, 32, 0, 2 * Math.PI);
+              ctx?.clip();
+              
+              // 画像を描画
+              ctx?.drawImage(testImg, 0, 0, 64, 64);
+              
+              // Base64エンコード
+              const base64Image = canvas.toDataURL('image/png');
+              console.log(`投稿${postNumber}のBase64画像生成完了:`, base64Image.substring(0, 50) + '...');
+              
+              // マーカーのアイコンを更新
+              try {
+                const updatedIcon = {
+                  url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <!-- 背景円（画像の境界線） -->
+                      <circle cx="40" cy="40" r="40" fill="white" stroke="#EA4335" stroke-width="3"/>
+                      <!-- Base64エンコードされた画像 -->
+                      <image href="${base64Image}" x="8" y="8" width="64" height="64"/>
+                      <!-- 投稿番号ラベル -->
+                      <circle cx="65" cy="15" r="12" fill="#4285F4" stroke="white" stroke-width="2"/>
+                      <text x="65" y="20" text-anchor="middle" fill="white" font-size="12" font-weight="bold">${postNumber}</text>
+                    </svg>
+                  `)}`,
+                  scaledSize: new window.google.maps.Size(80, 80),
+                  anchor: new window.google.maps.Point(40, 80)
+                };
+                
+                // setIconメソッドの存在確認
+                if ((marker as any).setIcon) {
+                  (marker as any).setIcon(updatedIcon);
+                  console.log(`投稿${postNumber}のマーカーアイコンをBase64画像で更新完了`);
+                } else {
+                  console.warn(`投稿${postNumber}のマーカーにsetIconメソッドが存在しません`);
+                }
+              } catch (updateError) {
+                console.warn(`投稿${postNumber}のマーカーアイコン更新に失敗:`, updateError);
+              }
             };
             testImg.onerror = (error) => {
               console.error(`投稿${postNumber}の画像読み込みエラー:`, error);
