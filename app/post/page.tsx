@@ -18,19 +18,21 @@ const CameraPost: React.FC = () => {
   const [location, setLocation] = useState<{lat: number; lng: number} | null>(null);
   const [locationError, setLocationError] = useState<string>("");
 
-  useEffect(() => {
-    const startCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-        });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (err) {
-        alert("カメラの起動に失敗しました");
+  // カメラ起動関数をコンポーネントレベルで定義
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
       }
-    };
+    } catch (err) {
+      alert("カメラの起動に失敗しました");
+    }
+  };
+
+  useEffect(() => {
     startCamera();
   }, []);
 
@@ -128,18 +130,6 @@ const CameraPost: React.FC = () => {
       setLocationError("");
       setUploadError("");
       // カメラ再起動
-      const startCamera = async () => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" },
-          });
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-          }
-        } catch (err) {
-          alert("カメラの起動に失敗しました");
-        }
-      };
       startCamera();
     }
   }, [isPosted]);
