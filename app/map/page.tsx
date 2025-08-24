@@ -158,7 +158,7 @@ export default function UserMapPage() {
         return isWithinRange;
       })
       .sort((a, b) => a.distance - b.distance)
-      .slice(0, 3); // デバッグ用に3件に制限
+      .slice(0, 10); // 上位10件を表示
 
     console.log('フィルター後の投稿:', postsWithDistance);
     console.log('最終表示件数:', postsWithDistance.length);
@@ -589,7 +589,7 @@ export default function UserMapPage() {
       // 距離順にソートして上位10件を取得
       const sortedPosts = filteredPosts
         .sort((a, b) => a.distance - b.distance)
-        .slice(0, 3); // デバッグ用に3件に制限
+        .slice(0, 10); // 上位10件を表示
 
       console.log('フィルター後の投稿:', sortedPosts); // フィルター後の結果
       console.log('最終表示件数:', sortedPosts.length); // 最終表示件数

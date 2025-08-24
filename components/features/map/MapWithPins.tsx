@@ -133,265 +133,95 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
         }
       }
       
-      // フォールバック: 従来のMarkerを使用
+      // フォールバック: 従来のMarkerを使用（シンプルな実装）
       try {
         console.log('従来のMarkerを使用してマーカーを作成');
         
         // contentプロパティがある場合は、従来のMarker用に変換
         if (options.content) {
-          console.log('contentプロパティを従来のMarker用に変換');
+          // 投稿番号を取得（投稿マーカーの場合のみ）
+          const postNumberElement = options.content.querySelector('[style*="background: #4285F4"]');
           
-          // 投稿番号を取得
-          const postNumber = options.content.querySelector('[style*="background: #4285F4"]')?.textContent || '●';
-          
-          // 画像URLを取得（投稿マーカーの場合）
-          let imageUrl = '';
-          const imgElement = options.content.querySelector('img');
-          if (imgElement && imgElement.src) {
-            imageUrl = imgElement.src;
-            console.log('投稿画像URLを発見:', imageUrl);
-          }
-          
-          // 従来のMarker用のオプションを作成
-          const legacyOptions = {
-            position: options.position,
-            map: options.map,
-            title: options.title,
-            // 投稿番号をラベルとして表示
-            label: {
-              text: postNumber,
-              color: 'white',
-              fontSize: '16px',
-              fontWeight: 'bold'
-            },
-            // カスタムアイコンを作成（画像付き）
-            icon: {
-              url: imageUrl ? 
-                // 画像がある場合は画像付きのSVG
-                `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                  <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- 背景円（画像の境界線） -->
-                    <circle cx="40" cy="40" r="40" fill="white" stroke="#EA4335" stroke-width="3"/>
-                    <!-- 画像を円形でクリップ -->
-                    <defs>
-                      <clipPath id="circleClip${postNumber}">
-                        <circle cx="40" cy="40" r="32"/>
-                      </clipPath>
-                    </defs>
-                    <!-- 画像（外部URLを直接参照） -->
-                    <image href="${imageUrl}" x="8" y="8" width="64" height="64" clip-path="url(#circleClip${postNumber})" preserveAspectRatio="xMidYMid slice"/>
-                    <!-- 投稿番号ラベル -->
-                    <circle cx="65" cy="15" r="12" fill="#4285F4" stroke="white" stroke-width="2"/>
-                    <text x="65" y="20" text-anchor="middle" fill="white" font-size="12" font-weight="bold">${postNumber}</text>
-                  </svg>
-                `)}` :
-                // 画像がない場合はシンプルなSVG
-                `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                  <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- 背景円 -->
-                    <circle cx="40" cy="40" r="40" fill="#EA4335"/>
-                    <!-- 投稿番号 -->
-                    <text x="40" y="50" text-anchor="middle" fill="white" font-size="20" font-weight="bold">${postNumber}</text>
-                  </svg>
-                `)}`,
-              scaledSize: new window.google.maps.Size(80, 80),
-              anchor: new window.google.maps.Point(40, 80)
-            }
-          };
-          
-          console.log('従来のMarker用オプション:', legacyOptions);
-          console.log('作成されるSVG URL:', legacyOptions.icon.url.substring(0, 200) + '...');
-          
-          // 画像の読み込みテスト
-          if (imageUrl) {
-            console.log(`投稿${postNumber}の画像読み込みテスト開始:`, imageUrl);
+          // 投稿番号がある場合（投稿マーカー）とない場合（ユーザーマーカー）を区別
+          if (postNumberElement && postNumberElement.textContent && !isNaN(parseInt(postNumberElement.textContent))) {
+            const postNumber = postNumberElement.textContent;
             
-            // 画像の読み込みをテスト
-            const testImg = new Image();
-            testImg.onload = () => {
-              console.log(`投稿${postNumber}の画像読み込み成功:`, {
-                width: testImg.width,
-                height: testImg.height,
-                naturalWidth: testImg.naturalWidth,
-                naturalHeight: testImg.naturalHeight
-              });
-              
-              // セキュリティ制限を回避するため、画像の存在確認のみ行う
-              console.log(`投稿${postNumber}の画像が正常に読み込まれました。マーカーに画像付きアイコンを設定します。`);
-              
-              // 画像付きのSVGアイコンを作成（外部URLを直接参照）
-              try {
-                const imageIcon = {
-                  url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <!-- 背景円（画像の境界線） -->
-                      <circle cx="40" cy="40" r="40" fill="white" stroke="#EA4335" stroke-width="3"/>
-                      <!-- 画像（外部URLを直接参照） -->
-                      <image href="${imageUrl}" x="8" y="8" width="64" height="64" preserveAspectRatio="xMidYMid slice"/>
-                      <!-- 投稿番号ラベル -->
-                      <circle cx="65" cy="15" r="12" fill="#4285F4" stroke="white" stroke-width="2"/>
-                      <text x="65" y="20" text-anchor="middle" fill="white" font-size="12" font-weight="bold">${postNumber}</text>
-                    </svg>
-                  `)}`,
-                  scaledSize: new window.google.maps.Size(80, 80),
-                  anchor: new window.google.maps.Point(40, 80)
-                };
-                
-                // setIconメソッドの存在確認
-                if ((marker as any).setIcon) {
-                  (marker as any).setIcon(imageIcon);
-                  console.log(`投稿${postNumber}のマーカーアイコンを画像付きに更新完了`);
-                } else {
-                  console.warn(`投稿${postNumber}のマーカーにsetIconメソッドが存在しません`);
-                }
-              } catch (iconUpdateError) {
-                console.warn(`投稿${postNumber}の画像付きアイコン作成に失敗:`, iconUpdateError);
-                
-                // フォールバック: シンプルなアイコン
-                const fallbackIcon = {
-                  url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <!-- 背景円 -->
-                      <circle cx="40" cy="40" r="40" fill="#EA4335"/>
-                      <!-- 投稿番号 -->
-                      <text x="40" y="50" text-anchor="middle" fill="white" font-size="20" font-weight="bold">${postNumber}</text>
-                    </svg>
-                  `)}`,
-                  scaledSize: new window.google.maps.Size(80, 80),
-                  anchor: new window.google.maps.Point(40, 80)
-                };
-                
-                if ((marker as any).setIcon) {
-                  (marker as any).setIcon(fallbackIcon);
-                  console.log(`投稿${postNumber}のマーカーアイコンをフォールバックアイコンに更新完了`);
-                }
+            // 投稿マーカー用のオプションを作成
+            const legacyOptions = {
+              position: options.position,
+              map: options.map,
+              title: options.title,
+              // 投稿番号をラベルとして表示
+              label: {
+                text: postNumber,
+                color: 'white',
+                fontSize: '16px',
+                fontWeight: 'bold'
               }
             };
-            testImg.onerror = (error) => {
-              console.error(`投稿${postNumber}の画像読み込みエラー:`, error);
-              
-              // 画像読み込みエラー時のフォールバック
-              const errorIcon = {
+            
+            console.log('投稿マーカー用の従来Markerオプション:', legacyOptions);
+            
+            const marker = new window.google.maps.Marker(legacyOptions);
+            console.log('投稿マーカー用の従来Marker作成成功:', marker);
+            return marker;
+          } else {
+            // ユーザーマーカーの場合、シンプルな青い点のアイコンを使用
+            const legacyOptions = {
+              position: options.position,
+              map: options.map,
+              title: options.title,
+              icon: {
                 url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                  <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- 背景円 -->
-                    <circle cx="40" cy="40" r="40" fill="#EA4335"/>
-                    <!-- エラー表示 -->
-                    <text x="40" y="45" text-anchor="middle" fill="white" font-size="12" font-weight="bold">画像</text>
-                    <text x="40" y="60" text-anchor="middle" fill="white" font-size="12" font-weight="bold">エラー</text>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="10" cy="10" r="10" fill="#4285F4" stroke="white" stroke-width="3"/>
                   </svg>
                 `)}`,
-                scaledSize: new window.google.maps.Size(80, 80),
-                anchor: new window.google.maps.Point(40, 80)
-              };
-              
-              if ((marker as any).setIcon) {
-                (marker as any).setIcon(errorIcon);
-                console.log(`投稿${postNumber}のマーカーアイコンをエラーアイコンに更新完了`);
+                scaledSize: new window.google.maps.Size(20, 20),
+                anchor: new window.google.maps.Point(10, 10)
               }
             };
-            testImg.src = imageUrl;
+            
+            console.log('ユーザーマーカー用の従来Markerオプション:', legacyOptions);
+            
+            const marker = new window.google.maps.Marker(legacyOptions);
+            console.log('ユーザーマーカー用の従来Marker作成成功:', marker);
+            return marker;
           }
-          
-          const marker = new window.google.maps.Marker(legacyOptions);
-          console.log('従来のMarker作成成功:', marker);
-          return marker;
-        } else {
-          // contentプロパティがない場合は通常のMarker
-          const marker = new window.google.maps.Marker(options);
-          console.log('従来のMarker作成成功:', marker);
-          return marker;
         }
       } catch (error) {
-        console.error('マーカー作成に失敗:', error);
-        
-        // 最終フォールバック: シンプルなデフォルトマーカー
-        try {
-          console.log('シンプルなデフォルトマーカーを作成');
-          const simpleOptions = {
-            position: options.position,
-            map: options.map,
-            title: options.title
-          };
-          const marker = new window.google.maps.Marker(simpleOptions);
-          console.log('シンプルなデフォルトマーカー作成成功:', marker);
-          return marker;
-        } catch (fallbackError) {
-          console.error('フォールバックマーカー作成も失敗:', fallbackError);
-          return null;
-        }
+        console.error('従来のMarkerの作成に失敗:', error);
+        return null;
       }
+      
+      return null;
     };
 
     // ユーザーの現在位置にマーカー
     console.log('ユーザーマーカー作成開始');
     
-    // カスタムユーザーマーカーのHTML要素を作成
+    // シンプルな青い点のユーザーマーカーを作成
     const userMarkerElement = document.createElement('div');
     userMarkerElement.innerHTML = `
       <div style="
         position: relative;
-        width: 80px;
-        height: 80px;
+        width: 20px;
+        height: 20px;
         cursor: pointer;
-        filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));
       ">
-        <!-- ユーザーアイコン -->
+        <!-- 青い点 -->
         <div style="
-          width: 65px;
-          height: 65px;
+          width: 20px;
+          height: 20px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #4285F4, #34A853);
-          border: 4px solid white;
-          box-shadow: 0 3px 12px rgba(0,0,0,0.3);
+          background: #4285F4;
+          border: 3px solid white;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
           position: absolute;
           top: 0;
-          left: 50%;
-          transform: translateX(-50%);
+          left: 0;
           z-index: 2;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="white"/>
-          </svg>
-        </div>
-        
-        <!-- ピンの矢印部分 -->
-        <div style="
-          position: absolute;
-          bottom: 0;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0;
-          height: 0;
-          border-left: 10px solid transparent;
-          border-right: 10px solid transparent;
-          border-top: 15px solid #4285F4;
-          z-index: 1;
         "></div>
-        
-        <!-- 現在地ラベル -->
-        <div style="
-          position: absolute;
-          top: -8px;
-          right: -8px;
-          background: #EA4335;
-          color: white;
-          border-radius: 50%;
-          width: 25px;
-          height: 25px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 10px;
-          font-weight: bold;
-          border: 3px solid white;
-          z-index: 3;
-        ">
-          現在
-        </div>
       </div>
     `;
     
@@ -400,8 +230,8 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
       map: mapInstance,
       title: '現在地',
       content: userMarkerElement,
-      // ピンの矢印部分が正確な位置を指すようにアンカーポイントを調整
-      anchor: { x: 40, y: 80 } // ピンの中心（40px）と矢印の先端（80px）
+      // 青い点の中心が正確な位置を指すようにアンカーポイントを調整
+      anchor: { x: 10, y: 10 } // 青い点の中心（20px ÷ 2 = 10px）
     });
 
     if (userMarker) {
@@ -460,13 +290,14 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
             height: 65px;
             border-radius: 50%;
             overflow: hidden;
-            border: 4px solid white;
+            border: 3px solid white;
             box-shadow: 0 3px 12px rgba(0,0,0,0.3);
             position: absolute;
             top: 0;
             left: 50%;
             transform: translateX(-50%);
             z-index: 2;
+            background: transparent;
           ">
             <img 
               src="${imageUrl}" 
@@ -475,6 +306,7 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
+                background: transparent;
               "
               onload="console.log('画像読み込み成功:', '${imageUrl}')"
               onerror="console.error('画像読み込みエラー:', '${imageUrl}', this.src)"
