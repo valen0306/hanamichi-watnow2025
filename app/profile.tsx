@@ -1,4 +1,4 @@
-import ProfileHeaderInfo from "@/components/profile/ProfileHeaderInfo";
+import ProfileHeaderInfo from "@/components/features/profile/ProfileHeaderInfo";
 
 
 export default function Profile() {

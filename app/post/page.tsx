@@ -199,12 +199,14 @@ const CameraPost: React.FC = () => {
         minDuration={2000} // 2秒間は最低表示
       />
       
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <PostHeader />
+      <div className="h-screen bg-gray-50 fixed inset-0">
+        {/* Fixed Header */}
+        <div className="fixed top-16 left-0 right-0 z-40">
+          <PostHeader />
+        </div>
       
       {!photo && (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 pt-20">
           <div className="w-full max-w-md">
             <video 
               ref={videoRef} 
@@ -222,7 +224,7 @@ const CameraPost: React.FC = () => {
       <canvas ref={canvasRef} style={{ display: "none" }} />
       
       {photo && !isPosted && (
-        <div className="flex flex-col items-center px-4 pb-20">
+        <div className="flex flex-col items-center px-4 pb-20 pt-20">
           <div className="w-full max-w-md">
             {/* 撮影した写真 */}
             <div className="relative mb-6">
@@ -270,7 +272,7 @@ const CameraPost: React.FC = () => {
       )}
       
       {isPosted && (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 pt-20">
           <div className="text-center">
             <div className="text-green-500 text-6xl mb-4">✓</div>
             <h2 className="text-2xl font-bold text-gray-800 mb-2">投稿完了！</h2>
