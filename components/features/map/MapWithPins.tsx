@@ -207,12 +207,12 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
                     <circle cx="40" cy="40" r="40" fill="white" stroke="#EA4335" stroke-width="3"/>
                     <!-- 画像を円形でクリップ -->
                     <defs>
-                      <clipPath id="circleClip">
+                      <clipPath id="circleClip${postNumber}">
                         <circle cx="40" cy="40" r="32"/>
                       </clipPath>
                     </defs>
-                    <!-- 画像 -->
-                    <image href="${imageUrl}" x="8" y="8" width="64" height="64" clip-path="url(#circleClip)"/>
+                    <!-- 画像（外部URLを直接参照） -->
+                    <image href="${imageUrl}" x="8" y="8" width="64" height="64" clip-path="url(#circleClip${postNumber})" preserveAspectRatio="xMidYMid slice"/>
                     <!-- 投稿番号ラベル -->
                     <circle cx="65" cy="15" r="12" fill="#4285F4" stroke="white" stroke-width="2"/>
                     <text x="65" y="20" text-anchor="middle" fill="white" font-size="12" font-weight="bold">${postNumber}</text>
@@ -233,6 +233,28 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
           };
           
           console.log('従来のMarker用オプション:', legacyOptions);
+          console.log('作成されるSVG URL:', legacyOptions.icon.url.substring(0, 200) + '...');
+          
+          // 画像の読み込みテスト
+          if (imageUrl) {
+            console.log(`投稿${postNumber}の画像読み込みテスト開始:`, imageUrl);
+            
+            // 画像の読み込みをテスト
+            const testImg = new Image();
+            testImg.onload = () => {
+              console.log(`投稿${postNumber}の画像読み込み成功:`, {
+                width: testImg.width,
+                height: testImg.height,
+                naturalWidth: testImg.naturalWidth,
+                naturalHeight: testImg.naturalHeight
+              });
+            };
+            testImg.onerror = (error) => {
+              console.error(`投稿${postNumber}の画像読み込みエラー:`, error);
+            };
+            testImg.src = imageUrl;
+          }
+          
           const marker = new window.google.maps.Marker(legacyOptions);
           console.log('従来のMarker作成成功:', marker);
           return marker;
