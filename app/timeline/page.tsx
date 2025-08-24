@@ -40,14 +40,14 @@ export default function TimelinePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Sticky Header with Search */}
-      <header className="sticky top-0 z-50 bg-white">
+    <div className="h-screen bg-white fixed inset-0">
+      {/* Fixed Header with Search */}
+      <header className="fixed top-16 left-0 right-0 z-40 bg-white border-b border-gray-200">
         <SearchBar onSearch={handleSearch} />
       </header>
 
-      {/* Main Content - Timeline */}
-      <main className="pb-20">
+      {/* Main Content - Timeline with responsive spacing */}
+      <main className="pt-32 pb-8 px-4 h-[calc(100vh-6rem)] sm:h-[calc(100vh-7rem)] md:h-[calc(100vh-6rem)] lg:h-[calc(100vh-5rem)] overflow-hidden">
         <Timeline />
       </main>
     </div>

@@ -106,8 +106,8 @@ export function Timeline({ className = '' }: TimelineProps) {
     )
   }
 
-  return (
-    <div className={`${className}`}>
+    return (
+    <div className={`h-full overflow-y-auto ${className}`}>
       {/* 投稿がない場合の表示 */}
       {images.length === 0 && !loading ? (
         <div className="text-center py-12">

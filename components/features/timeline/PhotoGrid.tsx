@@ -38,9 +38,9 @@ export function PhotoGrid({ images, onImageClick, className = '' }: PhotoGridPro
   }
 
   return (
-    <div className={`${className}`}>
+    <div className={`w-full ${className}`}>
       {/* インスタグラム風の3列グリッド */}
-      <div className="grid grid-cols-3 gap-px bg-gray-200">
+      <div className="grid grid-cols-3 gap-px bg-gray-200 w-full">
         {images.map((image, index) => (
           <div
             key={image.id}
