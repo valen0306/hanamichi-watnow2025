@@ -201,19 +201,19 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
     userMarkerElement.innerHTML = `
       <div style="
         position: relative;
-        width: 60px;
-        height: 60px;
+        width: 80px;
+        height: 80px;
         cursor: pointer;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));
       ">
         <!-- ユーザーアイコン -->
         <div style="
-          width: 50px;
-          height: 50px;
+          width: 65px;
+          height: 65px;
           border-radius: 50%;
           background: linear-gradient(135deg, #4285F4, #34A853);
-          border: 3px solid white;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          border: 4px solid white;
+          box-shadow: 0 3px 12px rgba(0,0,0,0.3);
           position: absolute;
           top: 0;
           left: 50%;
@@ -223,7 +223,7 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
           align-items: center;
           justify-content: center;
         ">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="white"/>
           </svg>
         </div>
@@ -236,28 +236,28 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
           transform: translateX(-50%);
           width: 0;
           height: 0;
-          border-left: 8px solid transparent;
-          border-right: 8px solid transparent;
-          border-top: 12px solid #4285F4;
+          border-left: 10px solid transparent;
+          border-right: 10px solid transparent;
+          border-top: 15px solid #4285F4;
           z-index: 1;
         "></div>
         
         <!-- 現在地ラベル -->
         <div style="
           position: absolute;
-          top: -5px;
-          right: -5px;
+          top: -8px;
+          right: -8px;
           background: #EA4335;
           color: white;
           border-radius: 50%;
-          width: 20px;
-          height: 20px;
+          width: 25px;
+          height: 25px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 8px;
+          font-size: 10px;
           font-weight: bold;
-          border: 2px solid white;
+          border: 3px solid white;
           z-index: 3;
         ">
           現在
@@ -271,7 +271,7 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
       title: '現在地',
       content: userMarkerElement,
       // ピンの矢印部分が正確な位置を指すようにアンカーポイントを調整
-      anchor: { x: 30, y: 60 } // ピンの中心（30px）と矢印の先端（60px）
+      anchor: { x: 40, y: 80 } // ピンの中心（40px）と矢印の先端（80px）
     });
 
     if (userMarker) {
@@ -291,19 +291,19 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
       markerElement.innerHTML = `
         <div style="
           position: relative;
-          width: 60px;
-          height: 60px;
+          width: 80px;
+          height: 80px;
           cursor: pointer;
-          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+          filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));
         ">
           <!-- 投稿画像 -->
           <div style="
-            width: 50px;
-            height: 50px;
+            width: 65px;
+            height: 65px;
             border-radius: 50%;
             overflow: hidden;
-            border: 3px solid white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: 4px solid white;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.3);
             position: absolute;
             top: 0;
             left: 50%;
@@ -311,14 +311,14 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
             z-index: 2;
           ">
             <img 
-              src="${post.image_url || 'https://via.placeholder.com/50x50/EA4335/FFFFFF?text=No+Image'}" 
+              src="${post.image_url || 'https://via.placeholder.com/65x65/EA4335/FFFFFF?text=No+Image'}" 
               alt="投稿画像"
               style="
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
               "
-              onerror="this.src='https://via.placeholder.com/50x50/EA4335/FFFFFF?text=Error'"
+              onerror="this.src='https://via.placeholder.com/65x65/EA4335/FFFFFF?text=Error'"
             />
           </div>
           
@@ -330,28 +330,28 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
             transform: translateX(-50%);
             width: 0;
             height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-top: 12px solid #EA4335;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 15px solid #EA4335;
             z-index: 1;
           "></div>
           
           <!-- 投稿番号ラベル -->
           <div style="
             position: absolute;
-            top: -5px;
-            right: -5px;
+            top: -8px;
+            right: -8px;
             background: #4285F4;
             color: white;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
+            width: 25px;
+            height: 25px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 12px;
             font-weight: bold;
-            border: 2px solid white;
+            border: 3px solid white;
             z-index: 3;
           ">
             ${index + 1}
@@ -365,7 +365,7 @@ const MapWithPins: React.FC<MapWithPinsProps> = ({ userLocation, nearbyPosts }) 
         title: `投稿 #${post.post_id}`,
         content: markerElement,
         // ピンの矢印部分が正確な位置を指すようにアンカーポイントを調整
-        anchor: { x: 30, y: 60 } // ピンの中心（30px）と矢印の先端（60px）
+        anchor: { x: 40, y: 80 } // ピンの中心（40px）と矢印の先端（80px）
       });
 
       if (marker) {
